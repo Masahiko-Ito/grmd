@@ -2,11 +2,14 @@
 #
 # grmd          General Resouce Manager Daemon
 #
-# Author:       Masahiko Ito <m-ito@mbox.kyoto-inet.or.jp>
+# Author:       Masahiko Ito <m-ito@myh.no-ip.org>
 # Modyfy:
 # description: grmd manage resources generally.
 # processname: grmd
 
+PATH="/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin"
+export PATH
+#
 if [ X"$1" = "X-h" -o X"$1" = "X--help" ]
 then
     echo "usage : `basename $0` [-d|--dir home_directory] [-H|--host hostname] [-p|--port port] [-q|--queue queue_count] [-k|--key keystring_file] [-l|--log logfile]"

@@ -1,7 +1,7 @@
 /*
  * grmd.c: General Resource Management Daemon
  *
- * Copyright 2004 Masahiko Ito <m-ito@mbox.kyoto-inet.or.jp>
+ * Copyright 2007 Masahiko Ito <m-ito@myh.no-ip.org>
  *
  *      grmd is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -20,12 +20,15 @@
  **************************************************************************
  *
  * Webpage: http://myh.no-ip.org/~tyserv/grmd/
+ * Masahiko Ito <m-ito@myh.no-ip.org>
  *
  **************************************************************************
  *
  * History
- * v0.1 2004.06.18 Masahiko Ito <m-ito@mbox.kyoto-inet.or.jp>
- *      Create
+ * 2004.06.18 Create
+ * 2007.01.29 add getpr
+ * 2007.01.30 add getrp
+ *
  */
 
 /*
@@ -45,6 +48,14 @@
  *
  * command  : srp admin_keystring
  * responce : OK, NG, UNKNOWN STATUS
+ *
+ * command  : getpr admin_keystring
+ * responce : OK PID RESID STATUS KEYSTR
+ *            NG
+ *
+ * command  : getrp admin_keystring
+ * responce : OK RESID PID STATUS KEYSTR
+ *            NG
  *
  * responce : UNKNOWN COMMAND
  *            NOT ALLOWED
@@ -126,6 +137,10 @@ char *argv[];
     socklen_t caddr_len;
     FILE *fp;
     char admin_keystring[MAX_IDLEN + 1];
+    char getpr_pid[MAX_IDLEN + 1], getpr_resid[MAX_IDLEN + 1], getpr_keystring[MAX_IDLEN + 1];
+    int getpr_status;
+    char getrp_pid[MAX_IDLEN + 1], getrp_resid[MAX_IDLEN + 1], getrp_keystring[MAX_IDLEN + 1];
+    int getrp_status;
 
     int ret, fd, status, wait_status;
 
@@ -238,6 +253,7 @@ char *argv[];
  * accept from client(open socket)
  */
         errno = 0;
+        bzero(Out_buf, sizeof Out_buf);
         caddr_len = sizeof caddr;
         S_sock = accept(S_waiting, (struct sockaddr *) &caddr, &caddr_len);
         while (S_sock < 0 && errno == EINTR) {
@@ -351,6 +367,94 @@ char *argv[];
                             (sizeof Out_buf) - 1);
                 }
 /*
+ * getpr
+ */
+            } else if (strncmp(Command, "getpr", strlen("getpr")) == 0 ||
+                       strncmp(Command, "GETPR", strlen("GETPR")) == 0) {
+                status = grm_getpr_first(Adminkeystr);
+                if (status == 0){
+                    while (status == 0){
+                        status = grm_getpr_item(Adminkeystr, getpr_pid, getpr_resid, &getpr_status, getpr_keystring);
+                        if (status == 0){
+                            strncpy(Out_buf, "OK", (sizeof Out_buf) - 1);
+                            strncat(Out_buf, "\t", (sizeof Out_buf) - strlen(Out_buf) - 1);
+                            strncat(Out_buf, getpr_pid, (sizeof Out_buf) - strlen(Out_buf) - 1);
+                            strncat(Out_buf, "\t", (sizeof Out_buf) - strlen(Out_buf) - 1);
+                            strncat(Out_buf, getpr_resid, (sizeof Out_buf) - strlen(Out_buf) - 1);
+                            strncat(Out_buf, "\t", (sizeof Out_buf) - strlen(Out_buf) - 1);
+    
+                            if (getpr_status == SHARE_LOCK) {
+                                strncat(Out_buf, "SHARE_LOCK", (sizeof Out_buf) - strlen(Out_buf) - 1);
+                            } else if (getpr_status == EXCLUSIVE_LOCK) {
+                                strncat(Out_buf, "EXCLUSIVE_LOCK", (sizeof Out_buf) - strlen(Out_buf) - 1);
+                            } else if (getpr_status == SHARE_WAIT) {
+                                strncat(Out_buf, "SHARE_WAIT", (sizeof Out_buf) - strlen(Out_buf) - 1);
+                            } else if (getpr_status == EXCLUSIVE_WAIT) {
+                                strncat(Out_buf, "EXCLUSIVE_WAIT", (sizeof Out_buf) - strlen(Out_buf) - 1);
+                            } else {
+                                strncat(Out_buf, "unknow status", (sizeof Out_buf) - strlen(Out_buf) - 1);
+                            }
+    
+                            strncat(Out_buf, "\t", (sizeof Out_buf) - strlen(Out_buf) - 1);
+                            strncat(Out_buf, getpr_keystring, (sizeof Out_buf) - strlen(Out_buf) - 1);
+                            strncat(Out_buf, "\n", (sizeof Out_buf) - strlen(Out_buf) - 1);
+                        }else{
+                            strncpy(Out_buf, "NG\n", (sizeof Out_buf) - 1);
+                        }
+                        sock_write(S_sock, Out_buf, strlen(Out_buf));
+                        status = grm_getpr_next(Adminkeystr);
+                    }
+                }else if (status == 1){
+                    strncpy(Out_buf, "OK\n", (sizeof Out_buf) - 1);
+                    sock_write(S_sock, Out_buf, strlen(Out_buf));
+                }else{
+                    strncpy(Out_buf, "NG\n", (sizeof Out_buf) - 1);
+                }
+/*
+ * getrp
+ */
+            } else if (strncmp(Command, "getrp", strlen("getrp")) == 0 ||
+                       strncmp(Command, "GETRP", strlen("GETRP")) == 0) {
+                status = grm_getrp_first(Adminkeystr);
+                if (status == 0){
+                    while (status == 0){
+                        status = grm_getrp_item(Adminkeystr, getrp_resid, getrp_pid, &getrp_status, getrp_keystring);
+                        if (status == 0){
+                            strncpy(Out_buf, "OK", (sizeof Out_buf) - 1);
+                            strncat(Out_buf, "\t", (sizeof Out_buf) - strlen(Out_buf) - 1);
+                            strncat(Out_buf, getrp_resid, (sizeof Out_buf) - strlen(Out_buf) - 1);
+                            strncat(Out_buf, "\t", (sizeof Out_buf) - strlen(Out_buf) - 1);
+                            strncat(Out_buf, getrp_pid, (sizeof Out_buf) - strlen(Out_buf) - 1);
+                            strncat(Out_buf, "\t", (sizeof Out_buf) - strlen(Out_buf) - 1);
+    
+                            if (getrp_status == SHARE_LOCK) {
+                                strncat(Out_buf, "SHARE_LOCK", (sizeof Out_buf) - strlen(Out_buf) - 1);
+                            } else if (getrp_status == EXCLUSIVE_LOCK) {
+                                strncat(Out_buf, "EXCLUSIVE_LOCK", (sizeof Out_buf) - strlen(Out_buf) - 1);
+                            } else if (getrp_status == SHARE_WAIT) {
+                                strncat(Out_buf, "SHARE_WAIT", (sizeof Out_buf) - strlen(Out_buf) - 1);
+                            } else if (getrp_status == EXCLUSIVE_WAIT) {
+                                strncat(Out_buf, "EXCLUSIVE_WAIT", (sizeof Out_buf) - strlen(Out_buf) - 1);
+                            } else {
+                                strncat(Out_buf, "unknow status", (sizeof Out_buf) - strlen(Out_buf) - 1);
+                            }
+    
+                            strncat(Out_buf, "\t", (sizeof Out_buf) - strlen(Out_buf) - 1);
+                            strncat(Out_buf, getrp_keystring, (sizeof Out_buf) - strlen(Out_buf) - 1);
+                            strncat(Out_buf, "\n", (sizeof Out_buf) - strlen(Out_buf) - 1);
+                        }else{
+                            strncpy(Out_buf, "NG\n", (sizeof Out_buf) - 1);
+                        }
+                        sock_write(S_sock, Out_buf, strlen(Out_buf));
+                        status = grm_getrp_next(Adminkeystr);
+                    }
+                }else if (status == 1){
+                    strncpy(Out_buf, "OK\n", (sizeof Out_buf) - 1);
+                    sock_write(S_sock, Out_buf, strlen(Out_buf));
+                }else{
+                    strncpy(Out_buf, "NG\n", (sizeof Out_buf) - 1);
+                }
+/*
  * unknown
  */
             } else {
@@ -380,6 +484,15 @@ char *argv[];
         if ((strncmp(Command, "lock", strlen("lock")) == 0 ||
              strncmp(Command, "LOCK", strlen("LOCK")) == 0) &&
             status == WAIT && wait_status > 0) {
+            /* do nothing */
+/*
+ * no write message to client because already write message to client
+ */
+        }else if ((strncmp(Command, "getpr", strlen("getpr")) == 0 ||
+                   strncmp(Command, "GETPR", strlen("GETPR")) == 0 ||
+                   strncmp(Command, "getrp", strlen("getrp")) == 0 ||
+                   strncmp(Command, "GETRP", strlen("GETRP")) == 0) &&
+                  status >= 0) {
             /* do nothing */
 /*
  * write message to client
@@ -476,7 +589,7 @@ char *buf;
 {
     char *p1, *p2, *p3, *p4, *p5;
 
-    Command = Pid = Resid = Mode = Keystr = NULL_STR;
+    Command = Pid = Resid = Mode = Keystr = Adminkeystr = NULL_STR;
 
     if ((p1 = strchr(buf, '\t')) == (char *) NULL) {
         if ((p1 = strchr(buf, '\r')) == (char *) NULL) {
@@ -494,7 +607,11 @@ char *buf;
     if (strncmp(Command, "spr", strlen("spr")) == 0 ||
         strncmp(Command, "SPR", strlen("SPR")) == 0 ||
         strncmp(Command, "srp", strlen("srp")) == 0 ||
-        strncmp(Command, "SRP", strlen("SRP")) == 0) {
+        strncmp(Command, "SRP", strlen("SRP")) == 0 ||
+        strncmp(Command, "getpr", strlen("getpr")) == 0 ||
+        strncmp(Command, "GETPR", strlen("GETPR")) == 0 ||
+        strncmp(Command, "getrp", strlen("getrp")) == 0 ||
+        strncmp(Command, "GETRP", strlen("GETRP")) == 0) {
         p1++;
         if ((p2 = strchr(p1, '\t')) == (char *) NULL) {
             if ((p2 = strchr(p1, '\r')) == (char *) NULL) {

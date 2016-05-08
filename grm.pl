@@ -111,6 +111,74 @@ sub grm_srp(){
 
     return ($sts);
 }
+#
+# 機能:リソース状態取得(pid-resid)
+# 引数:host, port, keystring
+# 戻値:status pid resid res_status keystr
+# 例  :$responce = grm_getpr("localhost", "20100", "Gehime");
+#      @stat_pid_resid_status_keystr = split(/\n/, $responce);
+#      foreach $i (@stat_pid_resid_status_keystr){
+#          ($stat, $pid, $resid, $status, $keystr) = split(/\t/, $i);
+#      }
+#
+sub grm_getpr(){
+    my ($host, $port, $keystring) = @_;
+    my ($sts, $responce, $handle);
+
+    $handle = IO::Socket::INET->new(Proto     => "tcp",
+                                PeerAddr  => $host,
+                                PeerPort  => $port);
+    if ($handle == 0){
+        printf("can't connect to port $port on $host: $! \n");
+        return "NG";
+    }
+    $handle->autoflush(1);              # so output gets there right away
+
+    $responce = "";
+
+    printf($handle "getpr\t$keystring\n");
+    while ($sts = <$handle>){
+        $responce .= $sts;
+    }
+    
+    close($handle);
+
+    return ($responce);
+}
+#
+# 機能:リソース状態取得(resid-pid)
+# 引数:host, port, keystring
+# 戻値:status resid pid res_status keystr
+# 例  :$responce = grm_getrp("localhost", "20100", "Gehime");
+#      @stat_resid_pid_status_keystr = split(/\n/, $responce);
+#      foreach $i (@stat_resid_pid_status_keystr){
+#          ($stat, $resid, $pid, $status, $keystr) = split(/\t/, $i);
+#      }
+#
+sub grm_getrp(){
+    my ($host, $port, $keystring) = @_;
+    my ($sts, $responce, $handle);
+
+    $handle = IO::Socket::INET->new(Proto     => "tcp",
+                                PeerAddr  => $host,
+                                PeerPort  => $port);
+    if ($handle == 0){
+        printf("can't connect to port $port on $host: $! \n");
+        return "NG";
+    }
+    $handle->autoflush(1);              # so output gets there right away
+
+    $responce = "";
+
+    printf($handle "getrp\t$keystring\n");
+    while ($sts = <$handle>){
+        $responce .= $sts;
+    }
+    
+    close($handle);
+
+    return ($responce);
+}
 #----------------------------------------------------------------------
 
 1;

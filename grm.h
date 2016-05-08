@@ -1,7 +1,7 @@
 /*
  * grm.h: Header file for General resource management functions
  *
- * Copyright 2004 Masahiko Ito <m-ito@mbox.kyoto-inet.or.jp>
+ * Copyright 2007 Masahiko Ito <m-ito@myh.no-ip.org>
  *
  *      grmd is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -20,12 +20,15 @@
  **************************************************************************
  *
  * Webpage: http://myh.no-ip.org/~tyserv/grmd/
+ * Masahiko Ito <m-ito@myh.no-ip.org>
  *
  **************************************************************************
  *
  * History
- *      2004.06.18 Masahiko Ito <m-ito@mbox.kyoto-inet.or.jp>
- *      Create
+ *  2004.06.18 first release
+ *  2007.01.29 add grm_getpr_xxx()
+ *  2007.01.30 add grm_getrp_xxx()
+ *
  */
 
 /*
@@ -60,4 +63,10 @@ extern int grm_srp();
 extern int grm_rmmsgq();
 extern int grm_wait();
 extern int grm_wakeup();
+extern int grm_getpr_first();
+extern int grm_getpr_next();
+extern int grm_getpr_item();
+extern int grm_getrp_first();
+extern int grm_getrp_next();
+extern int grm_getrp_item();
 

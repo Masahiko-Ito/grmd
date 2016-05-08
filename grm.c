@@ -1,7 +1,7 @@
 /*
  * grm.c: General resource management functions
  *
- * Copyright 2004 Masahiko Ito <m-ito@mbox.kyoto-inet.or.jp>
+ * Copyright 2007 Masahiko Ito <m-ito@myh.no-ip.org>
  *
  *      grmd is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -20,12 +20,15 @@
  **************************************************************************
  *
  * Webpage: http://myh.no-ip.org/~tyserv/grmd/
+ * Masahiko Ito <m-ito@myh.no-ip.org>
  *
  **************************************************************************
  *
  * History
- *      2004.06.18 Masahiko Ito <m-ito@mbox.kyoto-inet.or.jp>
- *      Create
+ *  2004.06.18 first release
+ *  2007.01.29 add grm_getpr_xxx()
+ *  2007.01.30 add grm_getrp_xxx()
+ *
  */
 
 /*
@@ -133,6 +136,80 @@
  *              -1  failure
  *
  *-------------------------------------------------------------------------
+ * int grm_getpr_first(admin_keystr)
+ *
+ *   function get first resource structure pid(H) resid(V)
+ *
+ *   char *admin_keystr : key string for administrator.
+ *
+ *   return   : 0   sccess
+ *              1   no resource
+ *              -1  failure
+ *
+ *-------------------------------------------------------------------------
+ * int grm_getpr_next(admin_keystr)
+ *
+ *   function get next resource structure pid(H) resid(V)
+ *
+ *   char *admin_keystr : key string for administrator.
+ *
+ *   return   : 0   sccess
+ *              1   no resource
+ *              -1  failure
+ *
+ *-------------------------------------------------------------------------
+ * int grm_getpr_item(admin_keystr, pid, resid, status, keystr)
+ *
+ *   function get next resource structure pid(H) resid(V)
+ *
+ *   char *admin_keystr : key string for administrator.
+ *   char *pid    : Process id. pid must be unique in system.
+ *   char *resid  : Resource id.
+ *   int  *status : Status.
+ *   char *keystr : Key string which was specified by grm_lock().
+ *
+ *   return   : 0   sccess
+ *              1   no resource
+ *              -1  failure
+ *
+ *-------------------------------------------------------------------------
+ * int grm_getrp_first(admin_keystr)
+ *
+ *   function get first resource structure resid(H) pid(V)
+ *
+ *   char *admin_keystr : key string for administrator.
+ *
+ *   return   : 0   sccess
+ *              1   no resource
+ *              -1  failure
+ *
+ *-------------------------------------------------------------------------
+ * int grm_getrp_next(admin_keystr)
+ *
+ *   function get next resource structure resid(H) pid(V)
+ *
+ *   char *admin_keystr : key string for administrator.
+ *
+ *   return   : 0   sccess
+ *              1   no resource
+ *              -1  failure
+ *
+ *-------------------------------------------------------------------------
+ * int grm_getrp_item(admin_keystr, resid, pid, status, keystr)
+ *
+ *   function get next resource structure resid(H) pid(V)
+ *
+ *   char *admin_keystr : key string for administrator.
+ *   char *resid  : Resource id.
+ *   char *pid    : Process id. pid must be unique in system.
+ *   int  *status : Status.
+ *   char *keystr : Key string which was specified by grm_lock().
+ *
+ *   return   : 0   sccess
+ *              1   no resource
+ *              -1  failure
+ *
+ *-------------------------------------------------------------------------
  *
  */
 
@@ -198,6 +275,16 @@ static struct pid_resid *pid_next_ptr = (struct pid_resid *) NULL;
  */
 static struct pid_resid *resid_prev_ptr = (struct pid_resid *) NULL;
 static struct pid_resid *resid_next_ptr = (struct pid_resid *) NULL;
+/*
+ * pointer to pid_resid for grm_getpr_xxx()
+ */
+static struct pid_resid *pid_next_getpr_ptr = (struct pid_resid *) NULL;
+static struct pid_resid *pid_resid_getpr_ptr = (struct pid_resid *) NULL;
+/*
+ * pointer to pid_resid for grm_getrp_xxx()
+ */
+static struct pid_resid *resid_next_getrp_ptr = (struct pid_resid *) NULL;
+static struct pid_resid *resid_pid_getrp_ptr = (struct pid_resid *) NULL;
 
 /*
  * key string for administrator
@@ -600,6 +687,220 @@ char *path;                     /* path to admin_keystring_file for making msgke
         return -1;
     }
 
+    return 0;
+}
+
+/*
+ * function : get first resource structure pid(H) resid(V)
+ * return : -1,0,1
+ */
+int grm_getpr_first(admin_keystr)
+char *admin_keystr;             /* in : key string for administrator, max MAX_IDLEN bytes */
+{
+    if (strncmp(AdminKeyStr, admin_keystr, strlen(AdminKeyStr)) != 0
+        || strlen(AdminKeyStr) != strlen(admin_keystr)) {
+        fprintf(stderr, "grm_spr AdminKeyStr unmatch\n");
+        return -1;
+    }
+
+    if (pid_next_ptr != (struct pid_resid *) NULL) {
+        pid_next_getpr_ptr = pid_next_ptr;
+        pid_resid_getpr_ptr = pid_next_ptr;
+        return 0;
+    }
+    pid_next_getpr_ptr = (struct pid_resid *) NULL;
+    pid_resid_getpr_ptr = (struct pid_resid *) NULL;
+    return 1;
+}
+
+/*
+ * function : get next resource structure pid(H) resid(V)
+ * return : -1,0,1
+ */
+int grm_getpr_next(admin_keystr)
+char *admin_keystr;             /* in : key string for administrator, max MAX_IDLEN bytes */
+{
+    struct pid_resid *pid_residw;
+    struct pid_resid *pid_residww;
+    int  skip_sw;
+
+    if (strncmp(AdminKeyStr, admin_keystr, strlen(AdminKeyStr)) != 0
+        || strlen(AdminKeyStr) != strlen(admin_keystr)) {
+        fprintf(stderr, "grm_spr AdminKeyStr unmatch\n");
+        return -1;
+    }
+
+    skip_sw = 1;
+    pid_residw = pid_next_getpr_ptr;
+    while (pid_residw != (struct pid_resid *) NULL) {
+        if (skip_sw == 1){
+            pid_residww = pid_resid_getpr_ptr;
+        }else{
+            pid_residww = pid_residw;
+        }
+        while (pid_residww != (struct pid_resid *) NULL) {
+            if (skip_sw == 1){
+                skip_sw = 0;
+            }else{
+                pid_resid_getpr_ptr = pid_residww;
+                return 0;
+            }
+            pid_residww = pid_residww->pid_next_resid_ptr;
+        }
+        pid_residw = pid_residw->pid_next_pid_ptr;
+        pid_next_getpr_ptr = pid_residw;
+    }
+    pid_next_getpr_ptr = (struct pid_resid *) NULL;
+    pid_resid_getpr_ptr = (struct pid_resid *) NULL;
+    return 1;
+}
+
+/*
+ * function : get item of resource structure pid(H) resid(V)
+ * return : -1,0,1
+ */
+int grm_getpr_item(admin_keystr, pid, resid, status, keystr)
+char *admin_keystr;             /* in  : key string for administrator, max MAX_IDLEN bytes */
+char *pid;                      /* out : Process id, max MAX_IDLEN bytes */
+char *resid;                    /* out : Resource id, max MAX_IDLEN bytes */
+int  *status;                   /* out : Status */
+char *keystr;                   /* out : key string, max MAX_IDLEN bytes */
+{
+    if (strncmp(AdminKeyStr, admin_keystr, strlen(AdminKeyStr)) != 0
+        || strlen(AdminKeyStr) != strlen(admin_keystr)) {
+        fprintf(stderr, "grm_spr AdminKeyStr unmatch\n");
+        return -1;
+    }
+
+    if (pid_resid_getpr_ptr == (struct pid_resid *) NULL){
+        return 1;
+    }
+    strncpy(pid, pid_resid_getpr_ptr->pid,
+            strlen(pid_resid_getpr_ptr->pid) <=
+            MAX_IDLEN ? strlen(pid_resid_getpr_ptr->pid) + 1 : MAX_IDLEN + 1);
+    pid[strlen(pid_resid_getpr_ptr->pid) <=
+                MAX_IDLEN ? strlen(pid_resid_getpr_ptr->pid) : MAX_IDLEN] = '\0';
+
+    strncpy(resid, pid_resid_getpr_ptr->resid,
+            strlen(pid_resid_getpr_ptr->resid) <=
+            MAX_IDLEN ? strlen(pid_resid_getpr_ptr->resid) + 1 : MAX_IDLEN + 1);
+    resid[strlen(pid_resid_getpr_ptr->resid) <=
+                MAX_IDLEN ? strlen(pid_resid_getpr_ptr->resid) : MAX_IDLEN] = '\0';
+
+    *status = pid_resid_getpr_ptr->status;
+
+    strncpy(keystr, pid_resid_getpr_ptr->keystr,
+            strlen(pid_resid_getpr_ptr->keystr) <=
+            MAX_IDLEN ? strlen(pid_resid_getpr_ptr->keystr) + 1 : MAX_IDLEN + 1);
+    keystr[strlen(pid_resid_getpr_ptr->keystr) <=
+                MAX_IDLEN ? strlen(pid_resid_getpr_ptr->keystr) : MAX_IDLEN] = '\0';
+    return 0;
+}
+
+/*
+ * function : get first resource structure resid(H) pid(V)
+ * return : -1,0,1
+ */
+int grm_getrp_first(admin_keystr)
+char *admin_keystr;             /* in : key string for administrator, max MAX_IDLEN bytes */
+{
+    if (strncmp(AdminKeyStr, admin_keystr, strlen(AdminKeyStr)) != 0
+        || strlen(AdminKeyStr) != strlen(admin_keystr)) {
+        fprintf(stderr, "grm_spr AdminKeyStr unmatch\n");
+        return -1;
+    }
+
+    if (resid_next_ptr != (struct pid_resid *) NULL) {
+        resid_next_getrp_ptr = resid_next_ptr;
+        resid_pid_getrp_ptr = resid_next_ptr;
+        return 0;
+    }
+    resid_next_getrp_ptr = (struct pid_resid *) NULL;
+    resid_pid_getrp_ptr = (struct pid_resid *) NULL;
+    return 1;
+}
+
+/*
+ * function : get next resource structure resid(H) pid(V)
+ * return : -1,0,1
+ */
+int grm_getrp_next(admin_keystr)
+char *admin_keystr;             /* in : key string for administrator, max MAX_IDLEN bytes */
+{
+    struct pid_resid *pid_residw;
+    struct pid_resid *pid_residww;
+    int  skip_sw;
+
+    if (strncmp(AdminKeyStr, admin_keystr, strlen(AdminKeyStr)) != 0
+        || strlen(AdminKeyStr) != strlen(admin_keystr)) {
+        fprintf(stderr, "grm_spr AdminKeyStr unmatch\n");
+        return -1;
+    }
+
+    skip_sw = 1;
+    pid_residw = resid_next_getrp_ptr;
+    while (pid_residw != (struct pid_resid *) NULL) {
+        if (skip_sw == 1){
+            pid_residww = resid_pid_getrp_ptr;
+        }else{
+            pid_residww = pid_residw;
+        }
+        while (pid_residww != (struct pid_resid *) NULL) {
+            if (skip_sw == 1){
+                skip_sw = 0;
+            }else{
+                resid_pid_getrp_ptr = pid_residww;
+                return 0;
+            }
+            pid_residww = pid_residww->resid_next_pid_ptr;
+        }
+        pid_residw = pid_residw->resid_next_resid_ptr;
+        resid_next_getrp_ptr = pid_residw;
+    }
+    resid_next_getrp_ptr = (struct pid_resid *) NULL;
+    resid_pid_getrp_ptr = (struct pid_resid *) NULL;
+    return 1;
+}
+
+/*
+ * function : get item of resource structure pid(H) resid(V)
+ * return : -1,0,1
+ */
+int grm_getrp_item(admin_keystr, resid, pid, status, keystr)
+char *admin_keystr;             /* in  : key string for administrator, max MAX_IDLEN bytes */
+char *resid;                    /* out : Resource id, max MAX_IDLEN bytes */
+char *pid;                      /* out : Process id, max MAX_IDLEN bytes */
+int  *status;                   /* out : Status */
+char *keystr;                   /* out : key string, max MAX_IDLEN bytes */
+{
+    if (strncmp(AdminKeyStr, admin_keystr, strlen(AdminKeyStr)) != 0
+        || strlen(AdminKeyStr) != strlen(admin_keystr)) {
+        fprintf(stderr, "grm_spr AdminKeyStr unmatch\n");
+        return -1;
+    }
+
+    if (resid_pid_getrp_ptr == (struct pid_resid *) NULL){
+        return 1;
+    }
+    strncpy(resid, resid_pid_getrp_ptr->resid,
+            strlen(resid_pid_getrp_ptr->resid) <=
+            MAX_IDLEN ? strlen(resid_pid_getrp_ptr->resid) + 1 : MAX_IDLEN + 1);
+    resid[strlen(resid_pid_getrp_ptr->resid) <=
+                MAX_IDLEN ? strlen(resid_pid_getrp_ptr->resid) : MAX_IDLEN] = '\0';
+
+    strncpy(pid, resid_pid_getrp_ptr->pid,
+            strlen(resid_pid_getrp_ptr->pid) <=
+            MAX_IDLEN ? strlen(resid_pid_getrp_ptr->pid) + 1 : MAX_IDLEN + 1);
+    pid[strlen(resid_pid_getrp_ptr->pid) <=
+                MAX_IDLEN ? strlen(resid_pid_getrp_ptr->pid) : MAX_IDLEN] = '\0';
+
+    *status = resid_pid_getrp_ptr->status;
+
+    strncpy(keystr, resid_pid_getrp_ptr->keystr,
+            strlen(resid_pid_getrp_ptr->keystr) <=
+            MAX_IDLEN ? strlen(resid_pid_getrp_ptr->keystr) + 1 : MAX_IDLEN + 1);
+    keystr[strlen(resid_pid_getrp_ptr->keystr) <=
+                MAX_IDLEN ? strlen(resid_pid_getrp_ptr->keystr) : MAX_IDLEN] = '\0';
     return 0;
 }
 

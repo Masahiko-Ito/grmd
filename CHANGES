@@ -1,0 +1,16 @@
+0.1  : 2004.06.18 first release.
+0.2  : 2007.02.01 grm.plを/usr/local/grm/へインストールするように修正。
+
+                  srp, sprでadminkeystr未指定時にセグフォルトしてたのを修正。
+                  rc.grmd内でPATH設定するように修正。
+
+                  grm_getpr_first(), grm_getpr_next(), grm_getpr_item()追加。
+                  getpr admin_keystring コマンド追加。
+
+                  MakefileのLIBSマクロに -lnsl 追加。
+
+                  grm_getrp_first(), grm_getrp_next(), grm_getrp_item()追加。
+                  getrp admin_keystring コマンド追加。
+
+                  残されたlockを強制解除するサンプルperlスクリプト(grmd_sweep.pl)
+                  を追加。

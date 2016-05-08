@@ -1,5 +1,5 @@
-grmd-0.1 -- General Resource Management Daemon
-Copyright (C) 2004  Masahiko Ito
+grmd-0.2 -- General Resource Management Daemon
+Copyright (C) 2007  Masahiko Ito
 
 These programs is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -16,13 +16,13 @@ along with these programs; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 Mail suggestions and bug reports for these programs to
-m-ito@mbox.kyoto-inet.or.jp
+Masahiko Ito <m-ito@myh.no-ip.org>
 
 紹介
 ====
 
 grmdは各種リソースの排他制御機能を提供する汎用的なデーモンです。主な
-開発プラットホームはSlackware-7.0(linux-2.2.26)上ですが、ほとんどの
+開発プラットホームはSlackware-10.1(linux-2.4.x)上ですが、ほとんどの
 Unix系OSの上で利用可能かと思います。
 
 従来、ファイルの排他制御であれば、mkdir(),symlink()等を利用してビジー
@@ -51,8 +51,8 @@ grmdはクライアントサーバ方式で制御を行い、あらゆるリソースの排他制御を
 インストール
 ============
 
-$ tar xvzf grmd-0.1.tar.gz
-$ cd grmd-0.1
+$ tar xvzf grmd-0.2.tar.gz
+$ cd grmd-0.2
 $ vi Makefile
 $ make
 $ su
@@ -229,6 +229,26 @@ srp keystring
 戻値 : OK       : 成功
        NG       : 失敗
 
+------------------------------------------------------------
+
+getpr keystring
+
+  機能 : リソースの状態を取得する(pid-resid)。
+  keystring : デーモン起動時に指定した管理者用キー文字列(最大64文字)。
+
+戻値 : OK pid resid status keystr : 成功
+       NG                         : 失敗
+
+------------------------------------------------------------
+
+getrp keystring
+
+  機能 : リソースの状態を取得する(resid-pid)。
+  keystring : デーモン起動時に指定した管理者用キー文字列(最大64文字)。
+
+戻値 : OK resid pid status keystr : 成功
+       NG                         : 失敗
+
 perlインタフェース
 ==================
 
@@ -266,6 +286,28 @@ lockmode : SHARE_LOCK, SL, S
 戻値:status
 例  :$status = grm_srp("localhost", "20100", "Gehime");
 
+------------------------------------------------------------
+
+機能:リソース状態取得(pid-resid)
+引数:host, port, keystring
+戻値:status pid resid status keystr
+例  :$responce = grm_getpr("localhost", "20100", "Gehime");
+     @stat_pid_resid_status_keystr = split(/\n/, $responce);
+     foreach $i (@stat_pid_resid_status_keystr){
+         ($stat, $pid, $resid, $status, $keystr) = split(/\t/, $i);
+     }
+
+------------------------------------------------------------
+
+機能:リソース状態取得(resid-pid)
+引数:host, port, keystring
+戻値:status resid pid status keystr
+例  :$responce = grm_getrp("localhost", "20100", "Gehime");
+     @stat_resid_pid_status_keystr = split(/\n/, $responce);
+     foreach $i (@stat_resid_pid_status_keystr){
+         ($stat, $resid, $pid, $status, $keystr) = split(/\t/, $i);
+     }
+
 サンプル(perlスクリプト)の実行
 ==============================
 
@@ -288,6 +330,18 @@ $ ./sample1 localhost 20100 & ./sample2 localhost 20100
 # 
 $ ./sample1 localhost 20100 & ./sample3 localhost 20100
 
+強制ロック解除スクリプト(perlサンプル)
+======================================
+
+本来はクライアント側で責任を持ってロックの解除を行う必要があるのですが、
+実際運用してみると、ロックが残って(あくまでもクライアント側の不備です
+が ;-P)困ることが有ります。そこで、このスクリプトを実行するとロックが
+解除されずに残っているものを検査し、強制的に解除します。ただし、前提条
+件として、lockコマンドに指定するpidにOSの生成するプロセスID(C言語での
+getpid()で取得できるもの)を指定しておく必要が有ります。
+
+$ ./grmd_sweep.pl localhost 20100
+
 BUGS
 ====
 
@@ -296,6 +350,6 @@ BUGS
 きうる限り終了時には排他の解放を行うように努めることが望ましい。
 
 -- 
-Masahiko Ito <m-ito@mbox.kyoto-inet.or.jp>
+Masahiko Ito <m-ito@myh.no-ip.org>
 http://myh.no-ip.org/~tyserv/grmd/
 
