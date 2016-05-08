@@ -1,16 +1,19 @@
-0.1  : 2004.06.18 first release.
-0.2  : 2007.02.01 grm.plを/usr/local/grm/へインストールするように修正。
+0.1 : 2004.06.18 : o first release.
 
-                  srp, sprでadminkeystr未指定時にセグフォルトしてたのを修正。
-                  rc.grmd内でPATH設定するように修正。
+0.2 : 2007.02.01 : o grm.plを/usr/local/grm/へインストールするように修正。
+                   o srp, sprでadminkeystr未指定時にセグフォルトしてたのを修正。
+                     rc.grmd内でPATH設定するように修正。
+                   o grm_getpr_first(), grm_getpr_next(), grm_getpr_item()追加。
+                     getpr admin_keystring コマンド追加。
+                   o MakefileのLIBSマクロに -lnsl 追加。
+                   o grm_getrp_first(), grm_getrp_next(), grm_getrp_item()追加。
+                     getrp admin_keystring コマンド追加。
+                   o 残されたlockを強制解除するサンプルperlスクリプト(grmd_sweep.pl)
+                     を追加。
 
-                  grm_getpr_first(), grm_getpr_next(), grm_getpr_item()追加。
-                  getpr admin_keystring コマンド追加。
-
-                  MakefileのLIBSマクロに -lnsl 追加。
-
-                  grm_getrp_first(), grm_getrp_next(), grm_getrp_item()追加。
-                  getrp admin_keystring コマンド追加。
-
-                  残されたlockを強制解除するサンプルperlスクリプト(grmd_sweep.pl)
-                  を追加。
+0.3 : 2007.02.15 : o まじめにdaemon化するように修正。
+                   o signal設定見直し。
+                   o option設定方法を変更。
+                   o hostの既定値をINADDR_ANYに変更。
+                   o pid, resid, key 等の上限値を64byteから256byteに変更。
+                   o libwrapによりクライアントを拒否した後、セグフォルトしてたのを修正。

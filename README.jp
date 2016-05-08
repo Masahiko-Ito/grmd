@@ -1,4 +1,4 @@
-grmd-0.2 -- General Resource Management Daemon
+grmd-0.3 -- General Resource Management Daemon
 Copyright (C) 2007  Masahiko Ito
 
 These programs is free software; you can redistribute it and/or modify
@@ -51,13 +51,13 @@ grmdはクライアントサーバ方式で制御を行い、あらゆるリソースの排他制御を
 インストール
 ============
 
-$ tar xvzf grmd-0.2.tar.gz
-$ cd grmd-0.2
+$ tar xvzf grmd-0.3.tar.gz
+$ cd grmd-0.3
 $ vi Makefile
 $ make
 $ su
 # make install
-# vi /usr/local/grmd/keystring  # 管理者用キー文字列設定(最大64文字)
+# vi /usr/local/grmd/keystring  # 管理者用キー文字列設定(最大256文字)
 # vi /etc/hosts.allow
 # vi /etc/hosts.deny
 
@@ -74,14 +74,15 @@ $ su
 
 $ /usr/local/grmd/rc.grmd -h
 usage : rc.grmd [-d|--dir home_directory] [-H|--host hostname] [-p|--port port] 
-                [-q|--queue queue_count] [-k|--key keystring_file] [-l|--log logfile]
+                [-q|--queue queue_count] [-k|--key keystring_file] [-l|--log logfile] [-f|--foreground]
 
   -d|--dir home_directory ... home directory. [/usr/local/grmd]
-  -H|--host hostname      ... hostname which daemon run in. [localhost]
+  -H|--host hostname      ... hostname which daemon run in. [INADDR_ANY]
   -p|--port port          ... socket port which client talk to. [20100]
   -q|--queue queue_count  ... queue count of socket backlog. [128]
   -k|--key keystring_file ... file (in home_directory) which administrator keystring is written in. [keystring]
   -l|--log logfile        ... file (in home_directory) which daemon record messages to. [logfile]
+  -f|--foreground         ... run in foreground [none]
 
 排他制御
 ========
@@ -186,12 +187,12 @@ lock pid resid lockmode keystring
 
   機能 : 排他を獲得する。対象のリソースが既に他のプロセスで排他獲得
          されていた場合は、解放されるまで待機する。
-  pid       : 自己のプロセスを特定する文字列(最大64文字)。
-  resid     : 排他の対象リソースを特定する文字列(最大64文字)。
+  pid       : 自己のプロセスを特定する文字列(最大256文字)。
+  resid     : 排他の対象リソースを特定する文字列(最大256文字)。
   lockmode  : 排他制御モードを指定する文字列。
               share_lock, sl, s
               exclusive_lock, el, x
-  keystring : 対象リソースをunlockする際に指定するキー文字列(最大64文字)。
+  keystring : 対象リソースをunlockする際に指定するキー文字列(最大256文字)。
 
 戻値 : OK       : 排他獲得成功
        DEADLOCK : 排他獲得失敗(デッドロック検知)
@@ -202,9 +203,9 @@ lock pid resid lockmode keystring
 unlock pid resid keystring
 
   機能 : 排他を解放する。開放を待っていたプロセスを起こす。
-  pid       : 自己のプロセスを特定する文字列(最大64文字)。
-  resid     : 排他の対象リソースを特定する文字列(最大64文字)。
-  keystring : 対象リソースをlockする際に指定したキー文字列(最大64文字)。
+  pid       : 自己のプロセスを特定する文字列(最大256文字)。
+  resid     : 排他の対象リソースを特定する文字列(最大256文字)。
+  keystring : 対象リソースをlockする際に指定したキー文字列(最大256文字)。
 
 戻値 : OK       : 排他解放成功
        NG       : 排他解放失敗
@@ -214,7 +215,7 @@ unlock pid resid keystring
 spr keystring
 
   機能 : リソースの状態をログファイルに書き出す(pid-resid)。
-  keystring : デーモン起動時に指定した管理者用キー文字列(最大64文字)。
+  keystring : デーモン起動時に指定した管理者用キー文字列(最大256文字)。
 
 戻値 : OK       : 成功
        NG       : 失敗
@@ -224,7 +225,7 @@ spr keystring
 srp keystring
 
   機能 : リソースの状態をログファイルに書き出す(resid-pid)。
-  keystring : デーモン起動時に指定した管理者用キー文字列(最大64文字)。
+  keystring : デーモン起動時に指定した管理者用キー文字列(最大256文字)。
 
 戻値 : OK       : 成功
        NG       : 失敗
@@ -234,7 +235,7 @@ srp keystring
 getpr keystring
 
   機能 : リソースの状態を取得する(pid-resid)。
-  keystring : デーモン起動時に指定した管理者用キー文字列(最大64文字)。
+  keystring : デーモン起動時に指定した管理者用キー文字列(最大256文字)。
 
 戻値 : OK pid resid status keystr : 成功
        NG                         : 失敗
@@ -244,7 +245,7 @@ getpr keystring
 getrp keystring
 
   機能 : リソースの状態を取得する(resid-pid)。
-  keystring : デーモン起動時に指定した管理者用キー文字列(最大64文字)。
+  keystring : デーモン起動時に指定した管理者用キー文字列(最大256文字)。
 
 戻値 : OK resid pid status keystr : 成功
        NG                         : 失敗

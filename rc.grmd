@@ -12,23 +12,25 @@ export PATH
 #
 if [ X"$1" = "X-h" -o X"$1" = "X--help" ]
 then
-    echo "usage : `basename $0` [-d|--dir home_directory] [-H|--host hostname] [-p|--port port] [-q|--queue queue_count] [-k|--key keystring_file] [-l|--log logfile]"
+    echo "usage : `basename $0` [-d|--dir home_directory] [-H|--host hostname] [-p|--port port] [-q|--queue queue_count] [-k|--key keystring_file] [-l|--log logfile] [-f|--foreground]"
     echo ""
     echo "  -d|--dir home_directory ... home directory. [/usr/local/grmd]"
-    echo "  -H|--host hostname      ... hostname which daemon run in. [localhost]"
+    echo "  -H|--host hostname      ... hostname which daemon run in. [INADDR_ANY]"
     echo "  -p|--port port          ... socket port which client talk to. [20100]"
     echo "  -q|--queue queue_count  ... queue count of socket backlog. [128]"
     echo "  -k|--key keystring_file ... file (in home_directory) which administrator keystring is written in. [keystring]"
     echo "  -l|--log logfile        ... file (in home_directory) which daemon record messages to. [logfile]"
+    echo "  -f|--foreground         ... run in foreground [none]"
     exit 0
 fi
 
 homedir="/usr/local/grmd"
-hostname="localhost"
+hostname=""
 port="20100"
 queue="128"
 keystring="keystring"
 logfile="logfile"
+foreground=""
 
 while [ "$#" != "0" ]
 do
@@ -39,7 +41,7 @@ do
         ;;
     -H|--host )
         shift
-        hostname="$1"
+        hostname="--hostname $1"
         ;;
     -p|--port )
         shift
@@ -57,6 +59,9 @@ do
         shift
         logfile="$1"
         ;;
+    -f|--foreground )
+        foreground="$1"
+        ;;
     *)
         ;;
     esac
@@ -65,5 +70,5 @@ done
 
 umask 077
 rm -f ${homedir}/${logfile}
-grmd ${hostname} ${port} ${queue} ${homedir}/${keystring} >${homedir}/${logfile} 2>&1 &
-
+grmd ${hostname} --port ${port} --queue ${queue} --key ${homedir}/${keystring} ${foreground} >${homedir}/${logfile} 2>&1
+exit $?

@@ -18,3 +18,8 @@ install:
 	install -c -m 0600 keystring $(PREFIX)/grmd/
 	install -c rc.grmd $(PREFIX)/grmd/
 	install -c grm.pl $(PREFIX)/grmd/
+indent:
+	indent -kr grmd.c
+	indent -kr grm.c
+	indent -kr grm.h
+	indent -kr ctype.c

@@ -13,5 +13,5 @@ short int **__ctype_b_loc();
 
 short int **__ctype_b()
 {
-        return (short int **)__ctype_b_loc();
+    return (short int **) __ctype_b_loc();
 }

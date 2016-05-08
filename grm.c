@@ -249,7 +249,7 @@ static int Deadlocl();
 struct pid_resid {
     char *pid;
     char *resid;
-    int status;                 /* SHARE_WAIT, EXCLUSIVE_WAIT, SHARE_LOCK, EXCLUSIVE_LOCK */
+    int status;			/* SHARE_WAIT, EXCLUSIVE_WAIT, SHARE_LOCK, EXCLUSIVE_LOCK */
     char *keystr;
     long msgtype;
 
@@ -301,79 +301,81 @@ static char *AdminKeyStr = (char *) NULL;
  * function : lock resource
  */
 int grm_lock(pid, resid, mode, keystr)
-char *pid;                      /* process id, max MAX_IDLEN bytes */
-char *resid;                    /* resource id, max MAX_IDLEN bytes */
-int mode;                       /* SHARE_LOCK, EXCLUSIVE_LOCK */
-char *keystr;                   /* key string, max MAX_IDLEN bytes */
+char *pid;			/* process id, max MAX_IDLEN bytes */
+char *resid;			/* resource id, max MAX_IDLEN bytes */
+int mode;			/* SHARE_LOCK, EXCLUSIVE_LOCK */
+char *keystr;			/* key string, max MAX_IDLEN bytes */
 {
     int stat;
     struct pid_resid *pid_resid;
 
     if (mode != SHARE_LOCK && mode != EXCLUSIVE_LOCK) {
-        fprintf(stderr, "grm_lock mode error(mode=%d)\n", mode);
-        return NG;
+	fprintf(stderr, "grm_lock mode error(mode=%d)\n", mode);
+	return NG;
     }
 #if 0
     if ((pid_resid = (struct pid_resid *) ExistPidResid(pid, resid))
-        != (struct pid_resid *) NULL) {
-        fprintf(stderr, "grm_lock already locked(pid=%-s, resid=%-s)\n",
-                pid, resid);
-        return NG;
+	!= (struct pid_resid *) NULL) {
+	fprintf(stderr, "grm_lock already locked(pid=%-s, resid=%-s)\n",
+		pid, resid);
+	return NG;
     } else {
-        if ((pid_resid =
-             (struct pid_resid *) CreatePidResid(pid, resid,
-                                                 keystr)) ==
-            (struct pid_resid *) NULL) {
-            return NG;
-        }
+	if ((pid_resid =
+	     (struct pid_resid *) CreatePidResid(pid, resid,
+						 keystr)) ==
+	    (struct pid_resid *) NULL) {
+	    return NG;
+	}
     }
 #else
     if ((pid_resid = (struct pid_resid *) ExistPidResid(pid, resid))
-        != (struct pid_resid *) NULL) {
-        if (pid_resid->status == SHARE_LOCK){
-            if (mode == SHARE_LOCK){
-                return OK;
-            }else{ /* EXCLUSIVE_LOCK */
-                if (DestroyPidResid(pid, resid, keystr) == -1) {
-                    return NG;
-                }
-            }
-        }else if (pid_resid->status == EXCLUSIVE_LOCK){
-            if (mode == SHARE_LOCK){
-                return OK;
-            }else{ /* EXCLUSIVE_LOCK */
-                return OK;
-            }
-        }else{
-            fprintf(stderr, "grm_lock status error(pid=%-s, resid=%-s, status=%d)\n", pid, resid, pid_resid->status);
-            return NG;
-        }
+	!= (struct pid_resid *) NULL) {
+	if (pid_resid->status == SHARE_LOCK) {
+	    if (mode == SHARE_LOCK) {
+		return OK;
+	    } else {		/* EXCLUSIVE_LOCK */
+		if (DestroyPidResid(pid, resid, keystr) == -1) {
+		    return NG;
+		}
+	    }
+	} else if (pid_resid->status == EXCLUSIVE_LOCK) {
+	    if (mode == SHARE_LOCK) {
+		return OK;
+	    } else {		/* EXCLUSIVE_LOCK */
+		return OK;
+	    }
+	} else {
+	    fprintf(stderr,
+		    "grm_lock status error(pid=%-s, resid=%-s, status=%d)\n",
+		    pid, resid, pid_resid->status);
+	    return NG;
+	}
     }
     if ((pid_resid =
-         (struct pid_resid *) CreatePidResid(pid, resid,
-                                             keystr)) ==
-        (struct pid_resid *) NULL) {
-        return NG;
+	 (struct pid_resid *) CreatePidResid(pid, resid,
+					     keystr)) ==
+	(struct pid_resid *) NULL) {
+	return NG;
     }
 #endif
 
     stat = ExclCheck(pid, resid, mode);
     if (stat == OK) {
-        pid_resid->status = mode;
-        return OK;
+	pid_resid->status = mode;
+	return OK;
     } else if (stat == DEADLOCK) {
-        if (DestroyPidResid(pid, resid, keystr) == -1) {
-            return NG;
-        } else {
-            return DEADLOCK;
-        }
+	if (DestroyPidResid(pid, resid, keystr) == -1) {
+	    return NG;
+	} else {
+	    return DEADLOCK;
+	}
     } else {
-        if (mode == SHARE_LOCK) {
-            pid_resid->status = SHARE_WAIT;
-        } else {
-            pid_resid->status = EXCLUSIVE_WAIT;
-        }
-        return WAIT;
+	if (mode == SHARE_LOCK) {
+	    pid_resid->status = SHARE_WAIT;
+	} else {
+	    pid_resid->status = EXCLUSIVE_WAIT;
+	}
+	return WAIT;
     }
 }
 
@@ -381,10 +383,10 @@ char *keystr;                   /* key string, max MAX_IDLEN bytes */
  * function : wait
  */
 int grm_wait(pid, resid, fd_sock, path)
-char *pid;                      /* process id, max MAX_IDLEN bytes */
-char *resid;                    /* resource id, max MAX_IDLEN bytes */
-int fd_sock;                    /* file descripter to close in child process */
-char *path;                     /* path to admin_keystring_file for making msgkey */
+char *pid;			/* process id, max MAX_IDLEN bytes */
+char *resid;			/* resource id, max MAX_IDLEN bytes */
+int fd_sock;			/* file descripter to close in child process */
+char *path;			/* path to admin_keystring_file for making msgkey */
 {
     struct pid_resid *pid_residw;
     struct pid_resid *pid_residww;
@@ -392,63 +394,63 @@ char *path;                     /* path to admin_keystring_file for making msgke
     int msqid, forkpid;
 
 
-    if ((forkpid = fork()) == 0) {      /* child */
+    if ((forkpid = fork()) == 0) {	/* child */
 /*
  * search for resource to wait
  */
-        pid_residw = pid_next_ptr;
-        while (pid_residw != (struct pid_resid *) NULL
-               && strncmp(pid_residw->pid, pid, MAX_IDLEN) != 0) {
-            pid_residw = pid_residw->pid_next_pid_ptr;
-        }
+	pid_residw = pid_next_ptr;
+	while (pid_residw != (struct pid_resid *) NULL
+	       && strncmp(pid_residw->pid, pid, MAX_IDLEN) != 0) {
+	    pid_residw = pid_residw->pid_next_pid_ptr;
+	}
 
-        pid_residww = pid_residw;
-        while (pid_residww != (struct pid_resid *) NULL
-               && strncmp(pid_residww->resid, resid, MAX_IDLEN) != 0) {
-            pid_residww = pid_residww->pid_next_resid_ptr;
-        }
+	pid_residww = pid_residw;
+	while (pid_residww != (struct pid_resid *) NULL
+	       && strncmp(pid_residww->resid, resid, MAX_IDLEN) != 0) {
+	    pid_residww = pid_residww->pid_next_resid_ptr;
+	}
 
-        if (pid_residww == (struct pid_resid *) NULL) {
-            fprintf(stderr,
-                    "grm_wait resource not found(pid=%-s, resid=%-s)\n",
-                    pid, resid);
-            return -2;
-        }
+	if (pid_residww == (struct pid_resid *) NULL) {
+	    fprintf(stderr,
+		    "grm_wait resource not found(pid=%-s, resid=%-s)\n",
+		    pid, resid);
+	    return -2;
+	}
 /*
  * child main
  */
 
-        if (close(fd_sock) == -1) {
-            fprintf(stderr,
-                    "grm_wait socket close error(pid=%-s, resid=%-s)\n",
-                    pid, resid);
-            return -2;
-        }
+	if (close(fd_sock) == -1) {
+	    fprintf(stderr,
+		    "grm_wait socket close error(pid=%-s, resid=%-s)\n",
+		    pid, resid);
+	    return -2;
+	}
 
-        if ((msqid =
-             msgget((key_t) ftok(path, 0), 0600 | IPC_CREAT)) == -1) {
-            fprintf(stderr,
-                    "grm_wait msgget error(pid=%-s, resid=%-s, path=%-s)\n",
-                    pid, resid, path);
-            return -2;
-        }
+	if ((msqid =
+	     msgget((key_t) ftok(path, 0), 0600 | IPC_CREAT)) == -1) {
+	    fprintf(stderr,
+		    "grm_wait msgget error(pid=%-s, resid=%-s, path=%-s)\n",
+		    pid, resid, path);
+	    return -2;
+	}
 
-        if (msgrcv(msqid, &msgbuf, BUF_LEN, pid_residww->msgtype, 0) == -1) {
-            fprintf(stderr, "grm_wait msgrcv error(pid=%-s, resid=%-s)\n",
-                    pid, resid);
-            return -2;
-        }
+	if (msgrcv(msqid, &msgbuf, BUF_LEN, pid_residww->msgtype, 0) == -1) {
+	    fprintf(stderr, "grm_wait msgrcv error(pid=%-s, resid=%-s)\n",
+		    pid, resid);
+	    return -2;
+	}
 
-        if (strncmp(msgbuf.data, "WAKEUP", strlen("WAKEUP")) != 0) {
-            fprintf(stderr,
-                    "grm_wait unexpected wakeup(pid=%-s, resid=%-s)\n",
-                    pid, resid);
-            return -2;
-        }
+	if (strncmp(msgbuf.data, "WAKEUP", strlen("WAKEUP")) != 0) {
+	    fprintf(stderr,
+		    "grm_wait unexpected wakeup(pid=%-s, resid=%-s)\n",
+		    pid, resid);
+	    return -2;
+	}
 
-        return forkpid;
-    } else {                    /* parent */
-        return forkpid;
+	return forkpid;
+    } else {			/* parent */
+	return forkpid;
     }
 }
 
@@ -456,37 +458,37 @@ char *path;                     /* path to admin_keystring_file for making msgke
  * function : unlock resource
  */
 int grm_unlock(pid, resid, keystr)
-char *pid;                      /* process id, max MAX_IDLEN bytes */
-char *resid;                    /* resource id, max MAX_IDLEN bytes */
-char *keystr;                   /* key string, max MAX_IDLEN bytes */
+char *pid;			/* process id, max MAX_IDLEN bytes */
+char *resid;			/* resource id, max MAX_IDLEN bytes */
+char *keystr;			/* key string, max MAX_IDLEN bytes */
 {
     struct pid_resid *pid_residw;
     struct pid_resid *pid_residww;
 
     pid_residw = pid_next_ptr;
     while (pid_residw != (struct pid_resid *) NULL
-           && strncmp(pid_residw->pid, pid, MAX_IDLEN) != 0) {
-        pid_residw = pid_residw->pid_next_pid_ptr;
+	   && strncmp(pid_residw->pid, pid, MAX_IDLEN) != 0) {
+	pid_residw = pid_residw->pid_next_pid_ptr;
     }
 
     pid_residww = pid_residw;
     while (pid_residww != (struct pid_resid *) NULL
-           && strncmp(pid_residww->resid, resid, MAX_IDLEN) != 0) {
-        pid_residww = pid_residww->pid_next_resid_ptr;
+	   && strncmp(pid_residww->resid, resid, MAX_IDLEN) != 0) {
+	pid_residww = pid_residww->pid_next_resid_ptr;
     }
 
     if (pid_residww == (struct pid_resid *) NULL) {
-        fprintf(stderr,
-                "grm_unlock resource not found(pid=%-s, resid=%-s)\n", pid,
-                resid);
-        return -1;
+	fprintf(stderr,
+		"grm_unlock resource not found(pid=%-s, resid=%-s)\n", pid,
+		resid);
+	return -1;
     }
     if (pid_residww->status == SHARE_WAIT
-        || pid_residww->status == EXCLUSIVE_WAIT) {
-        fprintf(stderr,
-                "grm_unlock resource is not locked(pid=%-s, resid=%-s)\n",
-                pid, resid);
-        return -1;
+	|| pid_residww->status == EXCLUSIVE_WAIT) {
+	fprintf(stderr,
+		"grm_unlock resource is not locked(pid=%-s, resid=%-s)\n",
+		pid, resid);
+	return -1;
     }
 
     return DestroyPidResid(pid, resid, keystr);
@@ -496,8 +498,8 @@ char *keystr;                   /* key string, max MAX_IDLEN bytes */
  * function : wakeup process which wait resource
  */
 int grm_wakeup(resid, path)
-char *resid;                    /* resource id, max MAX_IDLEN bytes */
-char *path;                     /* path to admin_keystring_file for making msgkey */
+char *resid;			/* resource id, max MAX_IDLEN bytes */
+char *path;			/* path to admin_keystring_file for making msgkey */
 {
     struct msgbuf2 msgbuf;
     int msqid;
@@ -506,56 +508,56 @@ char *path;                     /* path to admin_keystring_file for making msgke
 
     pid_residw = resid_next_ptr;
     while (pid_residw != (struct pid_resid *) NULL
-           && strncmp(pid_residw->resid, resid, MAX_IDLEN) != 0) {
-        pid_residw = pid_residw->resid_next_resid_ptr;
+	   && strncmp(pid_residw->resid, resid, MAX_IDLEN) != 0) {
+	pid_residw = pid_residw->resid_next_resid_ptr;
     }
 
     pid_residww = pid_residw;
     if (pid_residww != (struct pid_resid *) NULL) {
-        if (pid_residww->status == SHARE_WAIT) {
-            while (pid_residww != (struct pid_resid *) NULL
-                   && pid_residww->status == SHARE_WAIT) {
-                if ((msqid =
-                     msgget((key_t) ftok(path, 0),
-                            0600 | IPC_CREAT)) == -1) {
-                    fprintf(stderr,
-                            "grm_wakeup msgget error(resid=%-s, path=%-s)\n",
-                            resid, path);
-                    return -1;
-                }
+	if (pid_residww->status == SHARE_WAIT) {
+	    while (pid_residww != (struct pid_resid *) NULL
+		   && pid_residww->status == SHARE_WAIT) {
+		if ((msqid =
+		     msgget((key_t) ftok(path, 0),
+			    0600 | IPC_CREAT)) == -1) {
+		    fprintf(stderr,
+			    "grm_wakeup msgget error(resid=%-s, path=%-s)\n",
+			    resid, path);
+		    return -1;
+		}
 
-                msgbuf.type = pid_residww->msgtype;
-                strncpy(msgbuf.data, "WAKEUP\n", strlen("WAKEUP\n"));
+		msgbuf.type = pid_residww->msgtype;
+		strncpy(msgbuf.data, "WAKEUP\n", strlen("WAKEUP\n"));
 
-                if (msgsnd(msqid, &msgbuf, strlen(msgbuf.data), 0) == -1) {
-                    fprintf(stderr,
-                            "grm_wakeup msgsnd error(resid=%-s, path=%-s)\n",
-                            resid, path);
-                    return -1;
-                }
-                pid_residww->status = SHARE_LOCK;
-                pid_residww = pid_residww->resid_next_pid_ptr;
-            }
-        } else if (pid_residww->status == EXCLUSIVE_WAIT) {
-            if ((msqid =
-                 msgget((key_t) ftok(path, 0), 0600 | IPC_CREAT)) == -1) {
-                fprintf(stderr,
-                        "grm_wakeup msgget error(resid=%-s, path=%-s)\n",
-                        resid, path);
-                return -1;
-            }
+		if (msgsnd(msqid, &msgbuf, strlen(msgbuf.data), 0) == -1) {
+		    fprintf(stderr,
+			    "grm_wakeup msgsnd error(resid=%-s, path=%-s)\n",
+			    resid, path);
+		    return -1;
+		}
+		pid_residww->status = SHARE_LOCK;
+		pid_residww = pid_residww->resid_next_pid_ptr;
+	    }
+	} else if (pid_residww->status == EXCLUSIVE_WAIT) {
+	    if ((msqid =
+		 msgget((key_t) ftok(path, 0), 0600 | IPC_CREAT)) == -1) {
+		fprintf(stderr,
+			"grm_wakeup msgget error(resid=%-s, path=%-s)\n",
+			resid, path);
+		return -1;
+	    }
 
-            msgbuf.type = pid_residww->msgtype;
-            strncpy(msgbuf.data, "WAKEUP\n", strlen("WAKEUP\n"));
+	    msgbuf.type = pid_residww->msgtype;
+	    strncpy(msgbuf.data, "WAKEUP\n", strlen("WAKEUP\n"));
 
-            if (msgsnd(msqid, &msgbuf, strlen(msgbuf.data), 0) == -1) {
-                fprintf(stderr,
-                        "grm_wakeup msgsnd error(resid=%-s, path=%-s)\n",
-                        resid, path);
-                return -1;
-            }
-            pid_residww->status = EXCLUSIVE_LOCK;
-        }
+	    if (msgsnd(msqid, &msgbuf, strlen(msgbuf.data), 0) == -1) {
+		fprintf(stderr,
+			"grm_wakeup msgsnd error(resid=%-s, path=%-s)\n",
+			resid, path);
+		return -1;
+	    }
+	    pid_residww->status = EXCLUSIVE_LOCK;
+	}
     }
     return 0;
 }
@@ -567,23 +569,23 @@ int grm_setkeystr(admin_keystr)
 char *admin_keystr;
 {
     if (AdminKeyStr != (char *) NULL) {
-        free(AdminKeyStr);
+	free(AdminKeyStr);
     }
 
     if ((AdminKeyStr =
-         (char *) malloc(strlen(admin_keystr) <=
-                         MAX_IDLEN ? strlen(admin_keystr) + 1 : MAX_IDLEN +
-                         1)) == (char *) NULL) {
-        fprintf(stderr,
-                "grm_setkeystr AdminKeyStr allocate error(admin_keystr=%-s)\n",
-                admin_keystr);
-        return -1;
+	 (char *) malloc(strlen(admin_keystr) <=
+			 MAX_IDLEN ? strlen(admin_keystr) + 1 : MAX_IDLEN +
+			 1)) == (char *) NULL) {
+	fprintf(stderr,
+		"grm_setkeystr AdminKeyStr allocate error(admin_keystr=%-s)\n",
+		admin_keystr);
+	return -1;
     }
     strncpy(AdminKeyStr, admin_keystr,
-            strlen(admin_keystr) <=
-            MAX_IDLEN ? strlen(admin_keystr) + 1 : MAX_IDLEN + 1);
+	    strlen(admin_keystr) <=
+	    MAX_IDLEN ? strlen(admin_keystr) + 1 : MAX_IDLEN + 1);
     AdminKeyStr[strlen(admin_keystr) <=
-                MAX_IDLEN ? strlen(admin_keystr) : MAX_IDLEN] = '\0';
+		MAX_IDLEN ? strlen(admin_keystr) : MAX_IDLEN] = '\0';
 
     return 0;
 }
@@ -598,32 +600,32 @@ char *admin_keystr;
     struct pid_resid *pid_residww;
 
     if (strncmp(AdminKeyStr, admin_keystr, strlen(AdminKeyStr)) != 0
-        || strlen(AdminKeyStr) != strlen(admin_keystr)) {
-        fprintf(stderr, "grm_spr AdminKeyStr unmatch\n");
-        return -1;
+	|| strlen(AdminKeyStr) != strlen(admin_keystr)) {
+	fprintf(stderr, "grm_spr AdminKeyStr unmatch\n");
+	return -1;
     }
 
     pid_residw = pid_next_ptr;
     while (pid_residw != (struct pid_resid *) NULL) {
-        pid_residww = pid_residw;
-        while (pid_residww != (struct pid_resid *) NULL) {
-            fprintf(stderr, "pid=(%-s) resid=(%-s) ", pid_residww->pid,
-                    pid_residww->resid);
-            if (pid_residww->status == SHARE_LOCK) {
-                fprintf(stderr, "SHARE_LOCK ");
-            } else if (pid_residww->status == EXCLUSIVE_LOCK) {
-                fprintf(stderr, "EXCLUSIVE_LOCK ");
-            } else if (pid_residww->status == SHARE_WAIT) {
-                fprintf(stderr, "SHARE_WAIT ");
-            } else if (pid_residww->status == EXCLUSIVE_WAIT) {
-                fprintf(stderr, "EXCLUSIVE_WAIT ");
-            } else {
-                fprintf(stderr, "unknow status ");
-            }
-            fprintf(stderr, "keystr=(%-s)\n", pid_residww->keystr);
-            pid_residww = pid_residww->pid_next_resid_ptr;
-        }
-        pid_residw = pid_residw->pid_next_pid_ptr;
+	pid_residww = pid_residw;
+	while (pid_residww != (struct pid_resid *) NULL) {
+	    fprintf(stderr, "pid=(%-s) resid=(%-s) ", pid_residww->pid,
+		    pid_residww->resid);
+	    if (pid_residww->status == SHARE_LOCK) {
+		fprintf(stderr, "SHARE_LOCK ");
+	    } else if (pid_residww->status == EXCLUSIVE_LOCK) {
+		fprintf(stderr, "EXCLUSIVE_LOCK ");
+	    } else if (pid_residww->status == SHARE_WAIT) {
+		fprintf(stderr, "SHARE_WAIT ");
+	    } else if (pid_residww->status == EXCLUSIVE_WAIT) {
+		fprintf(stderr, "EXCLUSIVE_WAIT ");
+	    } else {
+		fprintf(stderr, "unknow status ");
+	    }
+	    fprintf(stderr, "keystr=(%-s)\n", pid_residww->keystr);
+	    pid_residww = pid_residww->pid_next_resid_ptr;
+	}
+	pid_residw = pid_residw->pid_next_pid_ptr;
     }
     return 0;
 }
@@ -638,32 +640,32 @@ char *admin_keystr;
     struct pid_resid *pid_residww;
 
     if (strncmp(AdminKeyStr, admin_keystr, strlen(AdminKeyStr)) != 0
-        || strlen(AdminKeyStr) != strlen(admin_keystr)) {
-        fprintf(stderr, "grm_srp AdminKeyStr unmatch\n");
-        return -1;
+	|| strlen(AdminKeyStr) != strlen(admin_keystr)) {
+	fprintf(stderr, "grm_srp AdminKeyStr unmatch\n");
+	return -1;
     }
 
     pid_residw = resid_next_ptr;
     while (pid_residw != (struct pid_resid *) NULL) {
-        pid_residww = pid_residw;
-        while (pid_residww != (struct pid_resid *) NULL) {
-            fprintf(stderr, "resid=(%-s) pid=(%-s) ", pid_residww->resid,
-                    pid_residww->pid);
-            if (pid_residww->status == SHARE_LOCK) {
-                fprintf(stderr, "SHARE_LOCK ");
-            } else if (pid_residww->status == EXCLUSIVE_LOCK) {
-                fprintf(stderr, "EXCLUSIVE_LOCK ");
-            } else if (pid_residww->status == SHARE_WAIT) {
-                fprintf(stderr, "SHARE_WAIT ");
-            } else if (pid_residww->status == EXCLUSIVE_WAIT) {
-                fprintf(stderr, "EXCLUSIVE_WAIT ");
-            } else {
-                fprintf(stderr, "unknow status ");
-            }
-            fprintf(stderr, "keystr=(%-s)\n", pid_residww->keystr);
-            pid_residww = pid_residww->resid_next_pid_ptr;
-        }
-        pid_residw = pid_residw->resid_next_resid_ptr;
+	pid_residww = pid_residw;
+	while (pid_residww != (struct pid_resid *) NULL) {
+	    fprintf(stderr, "resid=(%-s) pid=(%-s) ", pid_residww->resid,
+		    pid_residww->pid);
+	    if (pid_residww->status == SHARE_LOCK) {
+		fprintf(stderr, "SHARE_LOCK ");
+	    } else if (pid_residww->status == EXCLUSIVE_LOCK) {
+		fprintf(stderr, "EXCLUSIVE_LOCK ");
+	    } else if (pid_residww->status == SHARE_WAIT) {
+		fprintf(stderr, "SHARE_WAIT ");
+	    } else if (pid_residww->status == EXCLUSIVE_WAIT) {
+		fprintf(stderr, "EXCLUSIVE_WAIT ");
+	    } else {
+		fprintf(stderr, "unknow status ");
+	    }
+	    fprintf(stderr, "keystr=(%-s)\n", pid_residww->keystr);
+	    pid_residww = pid_residww->resid_next_pid_ptr;
+	}
+	pid_residw = pid_residw->resid_next_resid_ptr;
     }
     return 0;
 }
@@ -672,19 +674,19 @@ char *admin_keystr;
  * function : remove msgq for lock
  */
 int grm_rmmsgq(path)
-char *path;                     /* path to admin_keystring_file for making msgkey */
+char *path;			/* path to admin_keystring_file for making msgkey */
 {
     int msqid;
 
     if ((msqid = msgget((key_t) ftok(path, 0), 0600 | IPC_CREAT)) == -1) {
-        fprintf(stderr, "grm_rmmsgq msgget error(path=%-s)\n", path);
-        return -1;
+	fprintf(stderr, "grm_rmmsgq msgget error(path=%-s)\n", path);
+	return -1;
     }
 
     if (msgctl(msqid, IPC_RMID, NULL) == -1) {
-        fprintf(stderr, "grm_rmmsgq msgctl remove error(path=%-s)\n",
-                path);
-        return -1;
+	fprintf(stderr, "grm_rmmsgq msgctl remove error(path=%-s)\n",
+		path);
+	return -1;
     }
 
     return 0;
@@ -695,18 +697,18 @@ char *path;                     /* path to admin_keystring_file for making msgke
  * return : -1,0,1
  */
 int grm_getpr_first(admin_keystr)
-char *admin_keystr;             /* in : key string for administrator, max MAX_IDLEN bytes */
+char *admin_keystr;		/* in : key string for administrator, max MAX_IDLEN bytes */
 {
     if (strncmp(AdminKeyStr, admin_keystr, strlen(AdminKeyStr)) != 0
-        || strlen(AdminKeyStr) != strlen(admin_keystr)) {
-        fprintf(stderr, "grm_spr AdminKeyStr unmatch\n");
-        return -1;
+	|| strlen(AdminKeyStr) != strlen(admin_keystr)) {
+	fprintf(stderr, "grm_spr AdminKeyStr unmatch\n");
+	return -1;
     }
 
     if (pid_next_ptr != (struct pid_resid *) NULL) {
-        pid_next_getpr_ptr = pid_next_ptr;
-        pid_resid_getpr_ptr = pid_next_ptr;
-        return 0;
+	pid_next_getpr_ptr = pid_next_ptr;
+	pid_resid_getpr_ptr = pid_next_ptr;
+	return 0;
     }
     pid_next_getpr_ptr = (struct pid_resid *) NULL;
     pid_resid_getpr_ptr = (struct pid_resid *) NULL;
@@ -718,37 +720,37 @@ char *admin_keystr;             /* in : key string for administrator, max MAX_ID
  * return : -1,0,1
  */
 int grm_getpr_next(admin_keystr)
-char *admin_keystr;             /* in : key string for administrator, max MAX_IDLEN bytes */
+char *admin_keystr;		/* in : key string for administrator, max MAX_IDLEN bytes */
 {
     struct pid_resid *pid_residw;
     struct pid_resid *pid_residww;
-    int  skip_sw;
+    int skip_sw;
 
     if (strncmp(AdminKeyStr, admin_keystr, strlen(AdminKeyStr)) != 0
-        || strlen(AdminKeyStr) != strlen(admin_keystr)) {
-        fprintf(stderr, "grm_spr AdminKeyStr unmatch\n");
-        return -1;
+	|| strlen(AdminKeyStr) != strlen(admin_keystr)) {
+	fprintf(stderr, "grm_spr AdminKeyStr unmatch\n");
+	return -1;
     }
 
     skip_sw = 1;
     pid_residw = pid_next_getpr_ptr;
     while (pid_residw != (struct pid_resid *) NULL) {
-        if (skip_sw == 1){
-            pid_residww = pid_resid_getpr_ptr;
-        }else{
-            pid_residww = pid_residw;
-        }
-        while (pid_residww != (struct pid_resid *) NULL) {
-            if (skip_sw == 1){
-                skip_sw = 0;
-            }else{
-                pid_resid_getpr_ptr = pid_residww;
-                return 0;
-            }
-            pid_residww = pid_residww->pid_next_resid_ptr;
-        }
-        pid_residw = pid_residw->pid_next_pid_ptr;
-        pid_next_getpr_ptr = pid_residw;
+	if (skip_sw == 1) {
+	    pid_residww = pid_resid_getpr_ptr;
+	} else {
+	    pid_residww = pid_residw;
+	}
+	while (pid_residww != (struct pid_resid *) NULL) {
+	    if (skip_sw == 1) {
+		skip_sw = 0;
+	    } else {
+		pid_resid_getpr_ptr = pid_residww;
+		return 0;
+	    }
+	    pid_residww = pid_residww->pid_next_resid_ptr;
+	}
+	pid_residw = pid_residw->pid_next_pid_ptr;
+	pid_next_getpr_ptr = pid_residw;
     }
     pid_next_getpr_ptr = (struct pid_resid *) NULL;
     pid_resid_getpr_ptr = (struct pid_resid *) NULL;
@@ -760,40 +762,45 @@ char *admin_keystr;             /* in : key string for administrator, max MAX_ID
  * return : -1,0,1
  */
 int grm_getpr_item(admin_keystr, pid, resid, status, keystr)
-char *admin_keystr;             /* in  : key string for administrator, max MAX_IDLEN bytes */
-char *pid;                      /* out : Process id, max MAX_IDLEN bytes */
-char *resid;                    /* out : Resource id, max MAX_IDLEN bytes */
-int  *status;                   /* out : Status */
-char *keystr;                   /* out : key string, max MAX_IDLEN bytes */
+char *admin_keystr;		/* in  : key string for administrator, max MAX_IDLEN bytes */
+char *pid;			/* out : Process id, max MAX_IDLEN bytes */
+char *resid;			/* out : Resource id, max MAX_IDLEN bytes */
+int *status;			/* out : Status */
+char *keystr;			/* out : key string, max MAX_IDLEN bytes */
 {
     if (strncmp(AdminKeyStr, admin_keystr, strlen(AdminKeyStr)) != 0
-        || strlen(AdminKeyStr) != strlen(admin_keystr)) {
-        fprintf(stderr, "grm_spr AdminKeyStr unmatch\n");
-        return -1;
+	|| strlen(AdminKeyStr) != strlen(admin_keystr)) {
+	fprintf(stderr, "grm_spr AdminKeyStr unmatch\n");
+	return -1;
     }
 
-    if (pid_resid_getpr_ptr == (struct pid_resid *) NULL){
-        return 1;
+    if (pid_resid_getpr_ptr == (struct pid_resid *) NULL) {
+	return 1;
     }
     strncpy(pid, pid_resid_getpr_ptr->pid,
-            strlen(pid_resid_getpr_ptr->pid) <=
-            MAX_IDLEN ? strlen(pid_resid_getpr_ptr->pid) + 1 : MAX_IDLEN + 1);
+	    strlen(pid_resid_getpr_ptr->pid) <=
+	    MAX_IDLEN ? strlen(pid_resid_getpr_ptr->pid) + 1 : MAX_IDLEN +
+	    1);
     pid[strlen(pid_resid_getpr_ptr->pid) <=
-                MAX_IDLEN ? strlen(pid_resid_getpr_ptr->pid) : MAX_IDLEN] = '\0';
+	MAX_IDLEN ? strlen(pid_resid_getpr_ptr->pid) : MAX_IDLEN] = '\0';
 
     strncpy(resid, pid_resid_getpr_ptr->resid,
-            strlen(pid_resid_getpr_ptr->resid) <=
-            MAX_IDLEN ? strlen(pid_resid_getpr_ptr->resid) + 1 : MAX_IDLEN + 1);
+	    strlen(pid_resid_getpr_ptr->resid) <=
+	    MAX_IDLEN ? strlen(pid_resid_getpr_ptr->resid) +
+	    1 : MAX_IDLEN + 1);
     resid[strlen(pid_resid_getpr_ptr->resid) <=
-                MAX_IDLEN ? strlen(pid_resid_getpr_ptr->resid) : MAX_IDLEN] = '\0';
+	  MAX_IDLEN ? strlen(pid_resid_getpr_ptr->resid) : MAX_IDLEN] =
+	'\0';
 
     *status = pid_resid_getpr_ptr->status;
 
     strncpy(keystr, pid_resid_getpr_ptr->keystr,
-            strlen(pid_resid_getpr_ptr->keystr) <=
-            MAX_IDLEN ? strlen(pid_resid_getpr_ptr->keystr) + 1 : MAX_IDLEN + 1);
+	    strlen(pid_resid_getpr_ptr->keystr) <=
+	    MAX_IDLEN ? strlen(pid_resid_getpr_ptr->keystr) +
+	    1 : MAX_IDLEN + 1);
     keystr[strlen(pid_resid_getpr_ptr->keystr) <=
-                MAX_IDLEN ? strlen(pid_resid_getpr_ptr->keystr) : MAX_IDLEN] = '\0';
+	   MAX_IDLEN ? strlen(pid_resid_getpr_ptr->keystr) : MAX_IDLEN] =
+	'\0';
     return 0;
 }
 
@@ -802,18 +809,18 @@ char *keystr;                   /* out : key string, max MAX_IDLEN bytes */
  * return : -1,0,1
  */
 int grm_getrp_first(admin_keystr)
-char *admin_keystr;             /* in : key string for administrator, max MAX_IDLEN bytes */
+char *admin_keystr;		/* in : key string for administrator, max MAX_IDLEN bytes */
 {
     if (strncmp(AdminKeyStr, admin_keystr, strlen(AdminKeyStr)) != 0
-        || strlen(AdminKeyStr) != strlen(admin_keystr)) {
-        fprintf(stderr, "grm_spr AdminKeyStr unmatch\n");
-        return -1;
+	|| strlen(AdminKeyStr) != strlen(admin_keystr)) {
+	fprintf(stderr, "grm_spr AdminKeyStr unmatch\n");
+	return -1;
     }
 
     if (resid_next_ptr != (struct pid_resid *) NULL) {
-        resid_next_getrp_ptr = resid_next_ptr;
-        resid_pid_getrp_ptr = resid_next_ptr;
-        return 0;
+	resid_next_getrp_ptr = resid_next_ptr;
+	resid_pid_getrp_ptr = resid_next_ptr;
+	return 0;
     }
     resid_next_getrp_ptr = (struct pid_resid *) NULL;
     resid_pid_getrp_ptr = (struct pid_resid *) NULL;
@@ -825,37 +832,37 @@ char *admin_keystr;             /* in : key string for administrator, max MAX_ID
  * return : -1,0,1
  */
 int grm_getrp_next(admin_keystr)
-char *admin_keystr;             /* in : key string for administrator, max MAX_IDLEN bytes */
+char *admin_keystr;		/* in : key string for administrator, max MAX_IDLEN bytes */
 {
     struct pid_resid *pid_residw;
     struct pid_resid *pid_residww;
-    int  skip_sw;
+    int skip_sw;
 
     if (strncmp(AdminKeyStr, admin_keystr, strlen(AdminKeyStr)) != 0
-        || strlen(AdminKeyStr) != strlen(admin_keystr)) {
-        fprintf(stderr, "grm_spr AdminKeyStr unmatch\n");
-        return -1;
+	|| strlen(AdminKeyStr) != strlen(admin_keystr)) {
+	fprintf(stderr, "grm_spr AdminKeyStr unmatch\n");
+	return -1;
     }
 
     skip_sw = 1;
     pid_residw = resid_next_getrp_ptr;
     while (pid_residw != (struct pid_resid *) NULL) {
-        if (skip_sw == 1){
-            pid_residww = resid_pid_getrp_ptr;
-        }else{
-            pid_residww = pid_residw;
-        }
-        while (pid_residww != (struct pid_resid *) NULL) {
-            if (skip_sw == 1){
-                skip_sw = 0;
-            }else{
-                resid_pid_getrp_ptr = pid_residww;
-                return 0;
-            }
-            pid_residww = pid_residww->resid_next_pid_ptr;
-        }
-        pid_residw = pid_residw->resid_next_resid_ptr;
-        resid_next_getrp_ptr = pid_residw;
+	if (skip_sw == 1) {
+	    pid_residww = resid_pid_getrp_ptr;
+	} else {
+	    pid_residww = pid_residw;
+	}
+	while (pid_residww != (struct pid_resid *) NULL) {
+	    if (skip_sw == 1) {
+		skip_sw = 0;
+	    } else {
+		resid_pid_getrp_ptr = pid_residww;
+		return 0;
+	    }
+	    pid_residww = pid_residww->resid_next_pid_ptr;
+	}
+	pid_residw = pid_residw->resid_next_resid_ptr;
+	resid_next_getrp_ptr = pid_residw;
     }
     resid_next_getrp_ptr = (struct pid_resid *) NULL;
     resid_pid_getrp_ptr = (struct pid_resid *) NULL;
@@ -867,40 +874,45 @@ char *admin_keystr;             /* in : key string for administrator, max MAX_ID
  * return : -1,0,1
  */
 int grm_getrp_item(admin_keystr, resid, pid, status, keystr)
-char *admin_keystr;             /* in  : key string for administrator, max MAX_IDLEN bytes */
-char *resid;                    /* out : Resource id, max MAX_IDLEN bytes */
-char *pid;                      /* out : Process id, max MAX_IDLEN bytes */
-int  *status;                   /* out : Status */
-char *keystr;                   /* out : key string, max MAX_IDLEN bytes */
+char *admin_keystr;		/* in  : key string for administrator, max MAX_IDLEN bytes */
+char *resid;			/* out : Resource id, max MAX_IDLEN bytes */
+char *pid;			/* out : Process id, max MAX_IDLEN bytes */
+int *status;			/* out : Status */
+char *keystr;			/* out : key string, max MAX_IDLEN bytes */
 {
     if (strncmp(AdminKeyStr, admin_keystr, strlen(AdminKeyStr)) != 0
-        || strlen(AdminKeyStr) != strlen(admin_keystr)) {
-        fprintf(stderr, "grm_spr AdminKeyStr unmatch\n");
-        return -1;
+	|| strlen(AdminKeyStr) != strlen(admin_keystr)) {
+	fprintf(stderr, "grm_spr AdminKeyStr unmatch\n");
+	return -1;
     }
 
-    if (resid_pid_getrp_ptr == (struct pid_resid *) NULL){
-        return 1;
+    if (resid_pid_getrp_ptr == (struct pid_resid *) NULL) {
+	return 1;
     }
     strncpy(resid, resid_pid_getrp_ptr->resid,
-            strlen(resid_pid_getrp_ptr->resid) <=
-            MAX_IDLEN ? strlen(resid_pid_getrp_ptr->resid) + 1 : MAX_IDLEN + 1);
+	    strlen(resid_pid_getrp_ptr->resid) <=
+	    MAX_IDLEN ? strlen(resid_pid_getrp_ptr->resid) +
+	    1 : MAX_IDLEN + 1);
     resid[strlen(resid_pid_getrp_ptr->resid) <=
-                MAX_IDLEN ? strlen(resid_pid_getrp_ptr->resid) : MAX_IDLEN] = '\0';
+	  MAX_IDLEN ? strlen(resid_pid_getrp_ptr->resid) : MAX_IDLEN] =
+	'\0';
 
     strncpy(pid, resid_pid_getrp_ptr->pid,
-            strlen(resid_pid_getrp_ptr->pid) <=
-            MAX_IDLEN ? strlen(resid_pid_getrp_ptr->pid) + 1 : MAX_IDLEN + 1);
+	    strlen(resid_pid_getrp_ptr->pid) <=
+	    MAX_IDLEN ? strlen(resid_pid_getrp_ptr->pid) + 1 : MAX_IDLEN +
+	    1);
     pid[strlen(resid_pid_getrp_ptr->pid) <=
-                MAX_IDLEN ? strlen(resid_pid_getrp_ptr->pid) : MAX_IDLEN] = '\0';
+	MAX_IDLEN ? strlen(resid_pid_getrp_ptr->pid) : MAX_IDLEN] = '\0';
 
     *status = resid_pid_getrp_ptr->status;
 
     strncpy(keystr, resid_pid_getrp_ptr->keystr,
-            strlen(resid_pid_getrp_ptr->keystr) <=
-            MAX_IDLEN ? strlen(resid_pid_getrp_ptr->keystr) + 1 : MAX_IDLEN + 1);
+	    strlen(resid_pid_getrp_ptr->keystr) <=
+	    MAX_IDLEN ? strlen(resid_pid_getrp_ptr->keystr) +
+	    1 : MAX_IDLEN + 1);
     keystr[strlen(resid_pid_getrp_ptr->keystr) <=
-                MAX_IDLEN ? strlen(resid_pid_getrp_ptr->keystr) : MAX_IDLEN] = '\0';
+	   MAX_IDLEN ? strlen(resid_pid_getrp_ptr->keystr) : MAX_IDLEN] =
+	'\0';
     return 0;
 }
 
@@ -915,24 +927,24 @@ char *keystr;                   /* out : key string, max MAX_IDLEN bytes */
  * return : NULL, pointer to struct pid_resid
  */
 static struct pid_resid *ExistPidResid(pid, resid)
-char *pid;                      /* process id, max MAX_IDLEN bytes */
-char *resid;                    /* resource id, max MAX_IDLEN bytes */
+char *pid;			/* process id, max MAX_IDLEN bytes */
+char *resid;			/* resource id, max MAX_IDLEN bytes */
 {
     struct pid_resid *pid_resid;
     struct pid_resid *pid_residw;
 
     pid_resid = pid_next_ptr;
     while (pid_resid != (struct pid_resid *) NULL) {
-        if (strncmp(pid_resid->pid, pid, MAX_IDLEN) == 0) {     /* find pid in resource structure */
-            pid_residw = pid_resid;
-            while (pid_residw != (struct pid_resid *) NULL) {
-                if (strncmp(pid_residw->resid, resid, MAX_IDLEN) == 0) {        /* find resid in resource structure */
-                    return (struct pid_resid *) pid_residw;
-                }
-                pid_residw = pid_residw->pid_next_resid_ptr;
-            }
-        }
-        pid_resid = pid_resid->pid_next_pid_ptr;
+	if (strncmp(pid_resid->pid, pid, MAX_IDLEN) == 0) {	/* find pid in resource structure */
+	    pid_residw = pid_resid;
+	    while (pid_residw != (struct pid_resid *) NULL) {
+		if (strncmp(pid_residw->resid, resid, MAX_IDLEN) == 0) {	/* find resid in resource structure */
+		    return (struct pid_resid *) pid_residw;
+		}
+		pid_residw = pid_residw->pid_next_resid_ptr;
+	    }
+	}
+	pid_resid = pid_resid->pid_next_pid_ptr;
     }
     return (struct pid_resid *) NULL;
 }
@@ -942,9 +954,9 @@ char *resid;                    /* resource id, max MAX_IDLEN bytes */
  * return : NULL, pointer to struct pid_resid
  */
 static struct pid_resid *CreatePidResid(pid, resid, keystr)
-char *pid;                      /* process id, max MAX_IDLEN bytes */
-char *resid;                    /* resource id, max MAX_IDLEN bytes */
-char *keystr;                   /* key string, max MAX_IDLEN bytes */
+char *pid;			/* process id, max MAX_IDLEN bytes */
+char *resid;			/* resource id, max MAX_IDLEN bytes */
+char *keystr;			/* key string, max MAX_IDLEN bytes */
 {
     struct pid_resid *pid_resid;
     struct pid_resid *pid_residw;
@@ -954,47 +966,47 @@ char *keystr;                   /* key string, max MAX_IDLEN bytes */
  * memory allocate
  */
     if ((pid_resid =
-         (struct pid_resid *) malloc(sizeof(struct pid_resid))) ==
-        (struct pid_resid *) NULL) {
-        fprintf(stderr,
-                "CreatePidResid pid_resid allocate error(pid=%-s resid=%-s)\n",
-                pid, resid);
-        return pid_resid;
+	 (struct pid_resid *) malloc(sizeof(struct pid_resid))) ==
+	(struct pid_resid *) NULL) {
+	fprintf(stderr,
+		"CreatePidResid pid_resid allocate error(pid=%-s resid=%-s)\n",
+		pid, resid);
+	return pid_resid;
     }
     if ((pid_resid->pid =
-         (char *) malloc(strlen(pid) <=
-                         MAX_IDLEN ? strlen(pid) + 1 : MAX_IDLEN + 1)) ==
-        (char *) NULL) {
-        fprintf(stderr,
-                "CreatePidResid pid allocate error(pid=%-s resid=%-s)\n",
-                pid, resid);
-        free(pid_resid);
-        return (struct pid_resid *) NULL;
+	 (char *) malloc(strlen(pid) <=
+			 MAX_IDLEN ? strlen(pid) + 1 : MAX_IDLEN + 1)) ==
+	(char *) NULL) {
+	fprintf(stderr,
+		"CreatePidResid pid allocate error(pid=%-s resid=%-s)\n",
+		pid, resid);
+	free(pid_resid);
+	return (struct pid_resid *) NULL;
     }
     if ((pid_resid->resid =
-         (char *) malloc(strlen(resid) <=
-                         MAX_IDLEN ? strlen(resid) + 1 : MAX_IDLEN + 1)) ==
-        (char *) NULL) {
-        fprintf(stderr,
-                "CreatePidResid resid allocate error(pid=%-s resid=%-s)\n",
-                pid, resid);
-        free(pid_resid);
-        free(pid_resid->pid);
-        return (struct pid_resid *) NULL;
+	 (char *) malloc(strlen(resid) <=
+			 MAX_IDLEN ? strlen(resid) + 1 : MAX_IDLEN + 1)) ==
+	(char *) NULL) {
+	fprintf(stderr,
+		"CreatePidResid resid allocate error(pid=%-s resid=%-s)\n",
+		pid, resid);
+	free(pid_resid);
+	free(pid_resid->pid);
+	return (struct pid_resid *) NULL;
     }
     if ((pid_resid->keystr =
-         (char *) malloc(strlen(keystr) <=
-                         MAX_IDLEN ? strlen(keystr) + 1 : MAX_IDLEN +
-                         1)) == (char *) NULL) {
-        fprintf(stderr,
-                "CreatePidResid key string allocate error(pid=%-s resid=%-s key string length=%d)\n",
-                pid, resid,
-                strlen(keystr) <=
-                MAX_IDLEN ? strlen(keystr) + 1 : MAX_IDLEN + 1);
-        free(pid_resid);
-        free(pid_resid->pid);
-        free(pid_resid->resid);
-        return (struct pid_resid *) NULL;
+	 (char *) malloc(strlen(keystr) <=
+			 MAX_IDLEN ? strlen(keystr) + 1 : MAX_IDLEN +
+			 1)) == (char *) NULL) {
+	fprintf(stderr,
+		"CreatePidResid key string allocate error(pid=%-s resid=%-s key string length=%d)\n",
+		pid, resid,
+		strlen(keystr) <=
+		MAX_IDLEN ? strlen(keystr) + 1 : MAX_IDLEN + 1);
+	free(pid_resid);
+	free(pid_resid->pid);
+	free(pid_resid->resid);
+	return (struct pid_resid *) NULL;
     }
 
 /*
@@ -1003,7 +1015,7 @@ char *keystr;                   /* key string, max MAX_IDLEN bytes */
     pid_resid->pid[0] = '\0';
     pid_resid->resid[0] = '\0';
     pid_resid->keystr[0] = '\0';
-    pid_resid->status = 0;      /* SHARE_WAIT, EXCLUSIVE_WAIT, SHARE_LOCK, EXCLUSIVE_LOCK */
+    pid_resid->status = 0;	/* SHARE_WAIT, EXCLUSIVE_WAIT, SHARE_LOCK, EXCLUSIVE_LOCK */
 
     pid_resid->pid_prev_pid_ptr = (struct pid_resid *) NULL;
     pid_resid->pid_next_pid_ptr = (struct pid_resid *) NULL;
@@ -1021,74 +1033,74 @@ char *keystr;                   /* key string, max MAX_IDLEN bytes */
  * setting
  */
     strncpy(pid_resid->pid, pid,
-            strlen(pid) <= MAX_IDLEN ? strlen(pid) + 1 : MAX_IDLEN + 1);
+	    strlen(pid) <= MAX_IDLEN ? strlen(pid) + 1 : MAX_IDLEN + 1);
     pid_resid->pid[strlen(pid) <= MAX_IDLEN ? strlen(pid) : MAX_IDLEN] =
-        '\0';
+	'\0';
 
     strncpy(pid_resid->resid, resid,
-            strlen(resid) <=
-            MAX_IDLEN ? strlen(resid) + 1 : MAX_IDLEN + 1);
+	    strlen(resid) <=
+	    MAX_IDLEN ? strlen(resid) + 1 : MAX_IDLEN + 1);
     pid_resid->resid[strlen(resid) <=
-                     MAX_IDLEN ? strlen(resid) : MAX_IDLEN] = '\0';
+		     MAX_IDLEN ? strlen(resid) : MAX_IDLEN] = '\0';
 
     strncpy(pid_resid->keystr, keystr,
-            strlen(keystr) <=
-            MAX_IDLEN ? strlen(keystr) + 1 : MAX_IDLEN + 1);
+	    strlen(keystr) <=
+	    MAX_IDLEN ? strlen(keystr) + 1 : MAX_IDLEN + 1);
     pid_resid->keystr[strlen(keystr) <=
-                      MAX_IDLEN ? strlen(keystr) : MAX_IDLEN] = '\0';
+		      MAX_IDLEN ? strlen(keystr) : MAX_IDLEN] = '\0';
 
     pid_resid->msgtype = abs((long) pid_resid);
 
-    if (pid_prev_ptr == (struct pid_resid *) NULL && pid_next_ptr == (struct pid_resid *) NULL) {       /* first resource */
-        pid_prev_ptr = pid_resid;
-        pid_next_ptr = pid_resid;
+    if (pid_prev_ptr == (struct pid_resid *) NULL && pid_next_ptr == (struct pid_resid *) NULL) {	/* first resource */
+	pid_prev_ptr = pid_resid;
+	pid_next_ptr = pid_resid;
     } else {
-        pid_residw = pid_next_ptr;
-        while (pid_residw != (struct pid_resid *) NULL
-               && strncmp(pid_resid->pid, pid_residw->pid,
-                          MAX_IDLEN) != 0) {
-            pid_residw = pid_residw->pid_next_pid_ptr;
-        }
+	pid_residw = pid_next_ptr;
+	while (pid_residw != (struct pid_resid *) NULL
+	       && strncmp(pid_resid->pid, pid_residw->pid,
+			  MAX_IDLEN) != 0) {
+	    pid_residw = pid_residw->pid_next_pid_ptr;
+	}
 
-        if (pid_residw == (struct pid_resid *) NULL) {  /* first pid */
-            pid_resid->pid_prev_pid_ptr = pid_prev_ptr;
-            pid_prev_ptr->pid_next_pid_ptr = pid_resid;
-            pid_prev_ptr = pid_resid;
-        } else {
-            pid_residww = pid_residw;
-            while (pid_residww->pid_next_resid_ptr !=
-                   (struct pid_resid *) NULL) {
-                pid_residww = pid_residww->pid_next_resid_ptr;
-            }
-            pid_residww->pid_next_resid_ptr = pid_resid;
-            pid_resid->pid_prev_resid_ptr = pid_residww;
-        }
+	if (pid_residw == (struct pid_resid *) NULL) {	/* first pid */
+	    pid_resid->pid_prev_pid_ptr = pid_prev_ptr;
+	    pid_prev_ptr->pid_next_pid_ptr = pid_resid;
+	    pid_prev_ptr = pid_resid;
+	} else {
+	    pid_residww = pid_residw;
+	    while (pid_residww->pid_next_resid_ptr !=
+		   (struct pid_resid *) NULL) {
+		pid_residww = pid_residww->pid_next_resid_ptr;
+	    }
+	    pid_residww->pid_next_resid_ptr = pid_resid;
+	    pid_resid->pid_prev_resid_ptr = pid_residww;
+	}
     }
 
-    if (resid_prev_ptr == (struct pid_resid *) NULL && resid_next_ptr == (struct pid_resid *) NULL) {   /* first resource */
-        resid_prev_ptr = pid_resid;
-        resid_next_ptr = pid_resid;
+    if (resid_prev_ptr == (struct pid_resid *) NULL && resid_next_ptr == (struct pid_resid *) NULL) {	/* first resource */
+	resid_prev_ptr = pid_resid;
+	resid_next_ptr = pid_resid;
     } else {
-        pid_residw = resid_next_ptr;
-        while (pid_residw != (struct pid_resid *) NULL
-               && strncmp(pid_resid->resid, pid_residw->resid,
-                          MAX_IDLEN) != 0) {
-            pid_residw = pid_residw->resid_next_resid_ptr;
-        }
+	pid_residw = resid_next_ptr;
+	while (pid_residw != (struct pid_resid *) NULL
+	       && strncmp(pid_resid->resid, pid_residw->resid,
+			  MAX_IDLEN) != 0) {
+	    pid_residw = pid_residw->resid_next_resid_ptr;
+	}
 
-        if (pid_residw == (struct pid_resid *) NULL) {  /* first resource */
-            pid_resid->resid_prev_resid_ptr = resid_prev_ptr;
-            resid_prev_ptr->resid_next_resid_ptr = pid_resid;
-            resid_prev_ptr = pid_resid;
-        } else {
-            pid_residww = pid_residw;
-            while (pid_residww->resid_next_pid_ptr !=
-                   (struct pid_resid *) NULL) {
-                pid_residww = pid_residww->resid_next_pid_ptr;
-            }
-            pid_residww->resid_next_pid_ptr = pid_resid;
-            pid_resid->resid_prev_pid_ptr = pid_residww;
-        }
+	if (pid_residw == (struct pid_resid *) NULL) {	/* first resource */
+	    pid_resid->resid_prev_resid_ptr = resid_prev_ptr;
+	    resid_prev_ptr->resid_next_resid_ptr = pid_resid;
+	    resid_prev_ptr = pid_resid;
+	} else {
+	    pid_residww = pid_residw;
+	    while (pid_residww->resid_next_pid_ptr !=
+		   (struct pid_resid *) NULL) {
+		pid_residww = pid_residww->resid_next_pid_ptr;
+	    }
+	    pid_residww->resid_next_pid_ptr = pid_resid;
+	    pid_resid->resid_prev_pid_ptr = pid_residww;
+	}
     }
     return (struct pid_resid *) pid_resid;
 }
@@ -1098,220 +1110,220 @@ char *keystr;                   /* key string, max MAX_IDLEN bytes */
  * return : -1,0
  */
 static int DestroyPidResid(pid, resid, keystr)
-char *pid;                      /* process id, max MAX_IDLEN bytes */
-char *resid;                    /* resource id, max MAX_IDLEN bytes */
-char *keystr;                   /* key string, max MAX_IDLEN bytes */
+char *pid;			/* process id, max MAX_IDLEN bytes */
+char *resid;			/* resource id, max MAX_IDLEN bytes */
+char *keystr;			/* key string, max MAX_IDLEN bytes */
 {
     struct pid_resid *pid_residw;
     struct pid_resid *pid_residww;
 
     pid_residw = pid_next_ptr;
     while (pid_residw != (struct pid_resid *) NULL
-           && strncmp(pid_residw->pid, pid, MAX_IDLEN) != 0) {
-        pid_residw = pid_residw->pid_next_pid_ptr;
+	   && strncmp(pid_residw->pid, pid, MAX_IDLEN) != 0) {
+	pid_residw = pid_residw->pid_next_pid_ptr;
     }
     if (pid_residw == (struct pid_resid *) NULL) {
-        fprintf(stderr, "DestroyPidResid pid not found(pid=%-s)\n", pid);
-        return -1;
+	fprintf(stderr, "DestroyPidResid pid not found(pid=%-s)\n", pid);
+	return -1;
     } else {
-        pid_residww = pid_residw;
-        while (pid_residww != (struct pid_resid *) NULL
-               && strncmp(pid_residww->resid, resid, MAX_IDLEN) != 0) {
-            pid_residww = pid_residww->pid_next_resid_ptr;
-        }
-        if (pid_residww == (struct pid_resid *) NULL) {
-            fprintf(stderr, "DestroyPidResid resid not found(resid=%-s)\n",
-                    resid);
-            return -1;
-        }
+	pid_residww = pid_residw;
+	while (pid_residww != (struct pid_resid *) NULL
+	       && strncmp(pid_residww->resid, resid, MAX_IDLEN) != 0) {
+	    pid_residww = pid_residww->pid_next_resid_ptr;
+	}
+	if (pid_residww == (struct pid_resid *) NULL) {
+	    fprintf(stderr, "DestroyPidResid resid not found(resid=%-s)\n",
+		    resid);
+	    return -1;
+	}
     }
 
     if (strncmp(pid_residww->keystr, keystr, strlen(pid_residww->keystr))
-        != 0 || strlen(pid_residww->keystr) != strlen(keystr)) {
-        fprintf(stderr,
-                "DestroyPidResid key string unmatch(pid =%s resid=%-s)\n",
-                pid, resid);
-        return -1;
+	!= 0 || strlen(pid_residww->keystr) != strlen(keystr)) {
+	fprintf(stderr,
+		"DestroyPidResid key string unmatch(pid =%s resid=%-s)\n",
+		pid, resid);
+	return -1;
     }
 
-    if (pid_residww->pid_prev_resid_ptr == (struct pid_resid *) NULL && pid_residww->pid_next_resid_ptr == (struct pid_resid *) NULL) { /* top pid without slave */
-        if (pid_residww->pid_prev_pid_ptr == (struct pid_resid *) NULL && pid_residww->pid_next_pid_ptr == (struct pid_resid *) NULL) { /* no left and right */
-            pid_next_ptr = (struct pid_resid *) NULL;
-            pid_prev_ptr = (struct pid_resid *) NULL;
-        } else if (pid_residww->pid_prev_pid_ptr == (struct pid_resid *) NULL) {        /* most left */
-            pid_next_ptr = pid_residww->pid_next_pid_ptr;
-            pid_residww->pid_next_pid_ptr->pid_prev_pid_ptr =
-                (struct pid_resid *) NULL;
-        } else if (pid_residww->pid_next_pid_ptr == (struct pid_resid *) NULL) {        /* most right */
-            pid_prev_ptr = pid_residww->pid_prev_pid_ptr;
-            pid_residww->pid_prev_pid_ptr->pid_next_pid_ptr =
-                (struct pid_resid *) NULL;
-        } else {                /* between left and right */
-            pid_residww->pid_prev_pid_ptr->pid_next_pid_ptr =
-                pid_residww->pid_next_pid_ptr;
-            pid_residww->pid_next_pid_ptr->pid_prev_pid_ptr =
-                pid_residww->pid_prev_pid_ptr;
-        }
-    } else if (pid_residww->pid_prev_resid_ptr == (struct pid_resid *) NULL) {  /* top pid with slave */
-        if (pid_residww->pid_prev_pid_ptr == (struct pid_resid *) NULL && pid_residww->pid_next_pid_ptr == (struct pid_resid *) NULL) { /* no left and right */
-            pid_next_ptr = pid_residww->pid_next_resid_ptr;
-            pid_prev_ptr = pid_residww->pid_next_resid_ptr;
-            pid_residww->pid_next_resid_ptr->pid_prev_resid_ptr =
-                (struct pid_resid *) NULL;
-        } else if (pid_residww->pid_prev_pid_ptr == (struct pid_resid *) NULL) {        /* most left */
-            pid_next_ptr = pid_residww->pid_next_resid_ptr;
-            pid_residww->pid_next_pid_ptr->pid_prev_pid_ptr =
-                pid_residww->pid_next_resid_ptr;
-            pid_residww->pid_next_resid_ptr->pid_prev_resid_ptr =
-                (struct pid_resid *) NULL;
-            pid_residww->pid_next_resid_ptr->pid_next_pid_ptr =
-                pid_residww->pid_next_pid_ptr;
-        } else if (pid_residww->pid_next_pid_ptr == (struct pid_resid *) NULL) {        /* most right */
-            pid_prev_ptr = pid_residww->pid_next_resid_ptr;
-            pid_residww->pid_prev_pid_ptr->pid_next_pid_ptr =
-                pid_residww->pid_next_resid_ptr;
-            pid_residww->pid_next_resid_ptr->pid_prev_resid_ptr =
-                (struct pid_resid *) NULL;
-            pid_residww->pid_next_resid_ptr->pid_prev_pid_ptr =
-                pid_residww->pid_prev_pid_ptr;
-        } else {                /* between left and right */
-            pid_residww->pid_prev_pid_ptr->pid_next_pid_ptr =
-                pid_residww->pid_next_resid_ptr;
-            pid_residww->pid_next_pid_ptr->pid_prev_pid_ptr =
-                pid_residww->pid_next_resid_ptr;
-            pid_residww->pid_next_resid_ptr->pid_prev_resid_ptr =
-                (struct pid_resid *) NULL;
-            pid_residww->pid_next_resid_ptr->pid_next_pid_ptr =
-                pid_residww->pid_next_pid_ptr;
-            pid_residww->pid_next_resid_ptr->pid_prev_pid_ptr =
-                pid_residww->pid_prev_pid_ptr;
-        }
-    } else if (pid_residww->pid_next_resid_ptr == (struct pid_resid *) NULL) {  /* bottom pid */
-        if (pid_residww->pid_prev_pid_ptr == (struct pid_resid *) NULL && pid_residww->pid_next_pid_ptr == (struct pid_resid *) NULL) { /* no left and right */
-            pid_residww->pid_prev_resid_ptr->pid_next_resid_ptr =
-                (struct pid_resid *) NULL;
-        } else if (pid_residww->pid_prev_pid_ptr == (struct pid_resid *) NULL) {        /* most left */
-            pid_residww->pid_prev_resid_ptr->pid_next_resid_ptr =
-                (struct pid_resid *) NULL;
-        } else if (pid_residww->pid_next_pid_ptr == (struct pid_resid *) NULL) {        /* most right */
-            pid_residww->pid_prev_resid_ptr->pid_next_resid_ptr =
-                (struct pid_resid *) NULL;
-        } else {                /* between left and right */
-            pid_residww->pid_prev_resid_ptr->pid_next_resid_ptr =
-                (struct pid_resid *) NULL;
-        }
-    } else {                    /* pid between top and bottom */
-        if (pid_residww->pid_prev_pid_ptr == (struct pid_resid *) NULL && pid_residww->pid_next_pid_ptr == (struct pid_resid *) NULL) { /* no left and right */
-            pid_residww->pid_next_resid_ptr->pid_prev_resid_ptr =
-                pid_residww->pid_prev_resid_ptr;
-            pid_residww->pid_prev_resid_ptr->pid_next_resid_ptr =
-                pid_residww->pid_next_resid_ptr;
-        } else if (pid_residww->pid_prev_pid_ptr == (struct pid_resid *) NULL) {        /* most left */
-            pid_residww->pid_next_resid_ptr->pid_prev_resid_ptr =
-                pid_residww->pid_prev_resid_ptr;
-            pid_residww->pid_prev_resid_ptr->pid_next_resid_ptr =
-                pid_residww->pid_next_resid_ptr;
-        } else if (pid_residww->pid_next_pid_ptr == (struct pid_resid *) NULL) {        /* most right */
-            pid_residww->pid_next_resid_ptr->pid_prev_resid_ptr =
-                pid_residww->pid_prev_resid_ptr;
-            pid_residww->pid_prev_resid_ptr->pid_next_resid_ptr =
-                pid_residww->pid_next_resid_ptr;
-        } else {                /* between left and right */
-            pid_residww->pid_next_resid_ptr->pid_prev_resid_ptr =
-                pid_residww->pid_prev_resid_ptr;
-            pid_residww->pid_prev_resid_ptr->pid_next_resid_ptr =
-                pid_residww->pid_next_resid_ptr;
-        }
+    if (pid_residww->pid_prev_resid_ptr == (struct pid_resid *) NULL && pid_residww->pid_next_resid_ptr == (struct pid_resid *) NULL) {	/* top pid without slave */
+	if (pid_residww->pid_prev_pid_ptr == (struct pid_resid *) NULL && pid_residww->pid_next_pid_ptr == (struct pid_resid *) NULL) {	/* no left and right */
+	    pid_next_ptr = (struct pid_resid *) NULL;
+	    pid_prev_ptr = (struct pid_resid *) NULL;
+	} else if (pid_residww->pid_prev_pid_ptr == (struct pid_resid *) NULL) {	/* most left */
+	    pid_next_ptr = pid_residww->pid_next_pid_ptr;
+	    pid_residww->pid_next_pid_ptr->pid_prev_pid_ptr =
+		(struct pid_resid *) NULL;
+	} else if (pid_residww->pid_next_pid_ptr == (struct pid_resid *) NULL) {	/* most right */
+	    pid_prev_ptr = pid_residww->pid_prev_pid_ptr;
+	    pid_residww->pid_prev_pid_ptr->pid_next_pid_ptr =
+		(struct pid_resid *) NULL;
+	} else {		/* between left and right */
+	    pid_residww->pid_prev_pid_ptr->pid_next_pid_ptr =
+		pid_residww->pid_next_pid_ptr;
+	    pid_residww->pid_next_pid_ptr->pid_prev_pid_ptr =
+		pid_residww->pid_prev_pid_ptr;
+	}
+    } else if (pid_residww->pid_prev_resid_ptr == (struct pid_resid *) NULL) {	/* top pid with slave */
+	if (pid_residww->pid_prev_pid_ptr == (struct pid_resid *) NULL && pid_residww->pid_next_pid_ptr == (struct pid_resid *) NULL) {	/* no left and right */
+	    pid_next_ptr = pid_residww->pid_next_resid_ptr;
+	    pid_prev_ptr = pid_residww->pid_next_resid_ptr;
+	    pid_residww->pid_next_resid_ptr->pid_prev_resid_ptr =
+		(struct pid_resid *) NULL;
+	} else if (pid_residww->pid_prev_pid_ptr == (struct pid_resid *) NULL) {	/* most left */
+	    pid_next_ptr = pid_residww->pid_next_resid_ptr;
+	    pid_residww->pid_next_pid_ptr->pid_prev_pid_ptr =
+		pid_residww->pid_next_resid_ptr;
+	    pid_residww->pid_next_resid_ptr->pid_prev_resid_ptr =
+		(struct pid_resid *) NULL;
+	    pid_residww->pid_next_resid_ptr->pid_next_pid_ptr =
+		pid_residww->pid_next_pid_ptr;
+	} else if (pid_residww->pid_next_pid_ptr == (struct pid_resid *) NULL) {	/* most right */
+	    pid_prev_ptr = pid_residww->pid_next_resid_ptr;
+	    pid_residww->pid_prev_pid_ptr->pid_next_pid_ptr =
+		pid_residww->pid_next_resid_ptr;
+	    pid_residww->pid_next_resid_ptr->pid_prev_resid_ptr =
+		(struct pid_resid *) NULL;
+	    pid_residww->pid_next_resid_ptr->pid_prev_pid_ptr =
+		pid_residww->pid_prev_pid_ptr;
+	} else {		/* between left and right */
+	    pid_residww->pid_prev_pid_ptr->pid_next_pid_ptr =
+		pid_residww->pid_next_resid_ptr;
+	    pid_residww->pid_next_pid_ptr->pid_prev_pid_ptr =
+		pid_residww->pid_next_resid_ptr;
+	    pid_residww->pid_next_resid_ptr->pid_prev_resid_ptr =
+		(struct pid_resid *) NULL;
+	    pid_residww->pid_next_resid_ptr->pid_next_pid_ptr =
+		pid_residww->pid_next_pid_ptr;
+	    pid_residww->pid_next_resid_ptr->pid_prev_pid_ptr =
+		pid_residww->pid_prev_pid_ptr;
+	}
+    } else if (pid_residww->pid_next_resid_ptr == (struct pid_resid *) NULL) {	/* bottom pid */
+	if (pid_residww->pid_prev_pid_ptr == (struct pid_resid *) NULL && pid_residww->pid_next_pid_ptr == (struct pid_resid *) NULL) {	/* no left and right */
+	    pid_residww->pid_prev_resid_ptr->pid_next_resid_ptr =
+		(struct pid_resid *) NULL;
+	} else if (pid_residww->pid_prev_pid_ptr == (struct pid_resid *) NULL) {	/* most left */
+	    pid_residww->pid_prev_resid_ptr->pid_next_resid_ptr =
+		(struct pid_resid *) NULL;
+	} else if (pid_residww->pid_next_pid_ptr == (struct pid_resid *) NULL) {	/* most right */
+	    pid_residww->pid_prev_resid_ptr->pid_next_resid_ptr =
+		(struct pid_resid *) NULL;
+	} else {		/* between left and right */
+	    pid_residww->pid_prev_resid_ptr->pid_next_resid_ptr =
+		(struct pid_resid *) NULL;
+	}
+    } else {			/* pid between top and bottom */
+	if (pid_residww->pid_prev_pid_ptr == (struct pid_resid *) NULL && pid_residww->pid_next_pid_ptr == (struct pid_resid *) NULL) {	/* no left and right */
+	    pid_residww->pid_next_resid_ptr->pid_prev_resid_ptr =
+		pid_residww->pid_prev_resid_ptr;
+	    pid_residww->pid_prev_resid_ptr->pid_next_resid_ptr =
+		pid_residww->pid_next_resid_ptr;
+	} else if (pid_residww->pid_prev_pid_ptr == (struct pid_resid *) NULL) {	/* most left */
+	    pid_residww->pid_next_resid_ptr->pid_prev_resid_ptr =
+		pid_residww->pid_prev_resid_ptr;
+	    pid_residww->pid_prev_resid_ptr->pid_next_resid_ptr =
+		pid_residww->pid_next_resid_ptr;
+	} else if (pid_residww->pid_next_pid_ptr == (struct pid_resid *) NULL) {	/* most right */
+	    pid_residww->pid_next_resid_ptr->pid_prev_resid_ptr =
+		pid_residww->pid_prev_resid_ptr;
+	    pid_residww->pid_prev_resid_ptr->pid_next_resid_ptr =
+		pid_residww->pid_next_resid_ptr;
+	} else {		/* between left and right */
+	    pid_residww->pid_next_resid_ptr->pid_prev_resid_ptr =
+		pid_residww->pid_prev_resid_ptr;
+	    pid_residww->pid_prev_resid_ptr->pid_next_resid_ptr =
+		pid_residww->pid_next_resid_ptr;
+	}
     }
 
-    if (pid_residww->resid_prev_pid_ptr == (struct pid_resid *) NULL && pid_residww->resid_next_pid_ptr == (struct pid_resid *) NULL) { /* top pid without slave */
-        if (pid_residww->resid_prev_resid_ptr == (struct pid_resid *) NULL && pid_residww->resid_next_resid_ptr == (struct pid_resid *) NULL) { /* no left and right */
-            resid_next_ptr = (struct pid_resid *) NULL;
-            resid_prev_ptr = (struct pid_resid *) NULL;
-        } else if (pid_residww->resid_prev_resid_ptr == (struct pid_resid *) NULL) {    /* most left */
-            resid_next_ptr = pid_residww->resid_next_resid_ptr;
-            pid_residww->resid_next_resid_ptr->resid_prev_resid_ptr =
-                (struct pid_resid *) NULL;
-        } else if (pid_residww->resid_next_resid_ptr == (struct pid_resid *) NULL) {    /* most right */
-            resid_prev_ptr = pid_residww->resid_prev_resid_ptr;
-            pid_residww->resid_prev_resid_ptr->resid_next_resid_ptr =
-                (struct pid_resid *) NULL;
-        } else {                /* between left and right */
-            pid_residww->resid_prev_resid_ptr->resid_next_resid_ptr =
-                pid_residww->resid_next_resid_ptr;
-            pid_residww->resid_next_resid_ptr->resid_prev_resid_ptr =
-                pid_residww->resid_prev_resid_ptr;
-        }
-    } else if (pid_residww->resid_prev_pid_ptr == (struct pid_resid *) NULL) {  /* top pid with slave */
-        if (pid_residww->resid_prev_resid_ptr == (struct pid_resid *) NULL && pid_residww->resid_next_resid_ptr == (struct pid_resid *) NULL) { /* no left and right */
-            resid_next_ptr = pid_residww->resid_next_pid_ptr;
-            resid_prev_ptr = pid_residww->resid_next_pid_ptr;
-            pid_residww->resid_next_pid_ptr->resid_prev_pid_ptr =
-                (struct pid_resid *) NULL;
-        } else if (pid_residww->resid_prev_resid_ptr == (struct pid_resid *) NULL) {    /* most left */
-            resid_next_ptr = pid_residww->resid_next_pid_ptr;
-            pid_residww->resid_next_resid_ptr->resid_prev_resid_ptr =
-                pid_residww->resid_next_pid_ptr;
-            pid_residww->resid_next_pid_ptr->resid_prev_pid_ptr =
-                (struct pid_resid *) NULL;
-            pid_residww->resid_next_pid_ptr->resid_next_resid_ptr =
-                pid_residww->resid_next_resid_ptr;
-        } else if (pid_residww->resid_next_resid_ptr == (struct pid_resid *) NULL) {    /* most right */
-            resid_prev_ptr = pid_residww->resid_next_pid_ptr;
-            pid_residww->resid_prev_resid_ptr->resid_next_resid_ptr =
-                pid_residww->resid_next_pid_ptr;
-            pid_residww->resid_next_pid_ptr->resid_prev_pid_ptr =
-                (struct pid_resid *) NULL;
-            pid_residww->resid_next_pid_ptr->resid_prev_resid_ptr =
-                pid_residww->resid_prev_resid_ptr;
-        } else {                /* between left and right */
-            pid_residww->resid_prev_resid_ptr->resid_next_resid_ptr =
-                pid_residww->resid_next_pid_ptr;
-            pid_residww->resid_next_resid_ptr->resid_prev_resid_ptr =
-                pid_residww->resid_next_pid_ptr;
-            pid_residww->resid_next_pid_ptr->resid_prev_pid_ptr =
-                (struct pid_resid *) NULL;
-            pid_residww->resid_next_pid_ptr->resid_next_resid_ptr =
-                pid_residww->resid_next_resid_ptr;
-            pid_residww->resid_next_pid_ptr->resid_prev_resid_ptr =
-                pid_residww->resid_prev_resid_ptr;
-        }
-    } else if (pid_residww->resid_next_pid_ptr == (struct pid_resid *) NULL) {  /* bottom pid */
-        if (pid_residww->resid_prev_resid_ptr == (struct pid_resid *) NULL && pid_residww->resid_next_resid_ptr == (struct pid_resid *) NULL) { /* no left and right */
-            pid_residww->resid_prev_pid_ptr->resid_next_pid_ptr =
-                (struct pid_resid *) NULL;
-        } else if (pid_residww->resid_prev_resid_ptr == (struct pid_resid *) NULL) {    /* most left */
-            pid_residww->resid_prev_pid_ptr->resid_next_pid_ptr =
-                (struct pid_resid *) NULL;
-        } else if (pid_residww->resid_next_resid_ptr == (struct pid_resid *) NULL) {    /* most right */
-            pid_residww->resid_prev_pid_ptr->resid_next_pid_ptr =
-                (struct pid_resid *) NULL;
-        } else {                /* between left and right */
-            pid_residww->resid_prev_pid_ptr->resid_next_pid_ptr =
-                (struct pid_resid *) NULL;
-        }
-    } else {                    /* pid between top and bottom */
-        if (pid_residww->resid_prev_resid_ptr == (struct pid_resid *) NULL && pid_residww->resid_next_resid_ptr == (struct pid_resid *) NULL) { /* no left and right */
-            pid_residww->resid_next_pid_ptr->resid_prev_pid_ptr =
-                pid_residww->resid_prev_pid_ptr;
-            pid_residww->resid_prev_pid_ptr->resid_next_pid_ptr =
-                pid_residww->resid_next_pid_ptr;
-        } else if (pid_residww->resid_prev_resid_ptr == (struct pid_resid *) NULL) {    /* most left */
-            pid_residww->resid_next_pid_ptr->resid_prev_pid_ptr =
-                pid_residww->resid_prev_pid_ptr;
-            pid_residww->resid_prev_pid_ptr->resid_next_pid_ptr =
-                pid_residww->resid_next_pid_ptr;
-        } else if (pid_residww->resid_next_resid_ptr == (struct pid_resid *) NULL) {    /* most right */
-            pid_residww->resid_next_pid_ptr->resid_prev_pid_ptr =
-                pid_residww->resid_prev_pid_ptr;
-            pid_residww->resid_prev_pid_ptr->resid_next_pid_ptr =
-                pid_residww->resid_next_pid_ptr;
-        } else {                /* between left and right */
-            pid_residww->resid_next_pid_ptr->resid_prev_pid_ptr =
-                pid_residww->resid_prev_pid_ptr;
-            pid_residww->resid_prev_pid_ptr->resid_next_pid_ptr =
-                pid_residww->resid_next_pid_ptr;
-        }
+    if (pid_residww->resid_prev_pid_ptr == (struct pid_resid *) NULL && pid_residww->resid_next_pid_ptr == (struct pid_resid *) NULL) {	/* top pid without slave */
+	if (pid_residww->resid_prev_resid_ptr == (struct pid_resid *) NULL && pid_residww->resid_next_resid_ptr == (struct pid_resid *) NULL) {	/* no left and right */
+	    resid_next_ptr = (struct pid_resid *) NULL;
+	    resid_prev_ptr = (struct pid_resid *) NULL;
+	} else if (pid_residww->resid_prev_resid_ptr == (struct pid_resid *) NULL) {	/* most left */
+	    resid_next_ptr = pid_residww->resid_next_resid_ptr;
+	    pid_residww->resid_next_resid_ptr->resid_prev_resid_ptr =
+		(struct pid_resid *) NULL;
+	} else if (pid_residww->resid_next_resid_ptr == (struct pid_resid *) NULL) {	/* most right */
+	    resid_prev_ptr = pid_residww->resid_prev_resid_ptr;
+	    pid_residww->resid_prev_resid_ptr->resid_next_resid_ptr =
+		(struct pid_resid *) NULL;
+	} else {		/* between left and right */
+	    pid_residww->resid_prev_resid_ptr->resid_next_resid_ptr =
+		pid_residww->resid_next_resid_ptr;
+	    pid_residww->resid_next_resid_ptr->resid_prev_resid_ptr =
+		pid_residww->resid_prev_resid_ptr;
+	}
+    } else if (pid_residww->resid_prev_pid_ptr == (struct pid_resid *) NULL) {	/* top pid with slave */
+	if (pid_residww->resid_prev_resid_ptr == (struct pid_resid *) NULL && pid_residww->resid_next_resid_ptr == (struct pid_resid *) NULL) {	/* no left and right */
+	    resid_next_ptr = pid_residww->resid_next_pid_ptr;
+	    resid_prev_ptr = pid_residww->resid_next_pid_ptr;
+	    pid_residww->resid_next_pid_ptr->resid_prev_pid_ptr =
+		(struct pid_resid *) NULL;
+	} else if (pid_residww->resid_prev_resid_ptr == (struct pid_resid *) NULL) {	/* most left */
+	    resid_next_ptr = pid_residww->resid_next_pid_ptr;
+	    pid_residww->resid_next_resid_ptr->resid_prev_resid_ptr =
+		pid_residww->resid_next_pid_ptr;
+	    pid_residww->resid_next_pid_ptr->resid_prev_pid_ptr =
+		(struct pid_resid *) NULL;
+	    pid_residww->resid_next_pid_ptr->resid_next_resid_ptr =
+		pid_residww->resid_next_resid_ptr;
+	} else if (pid_residww->resid_next_resid_ptr == (struct pid_resid *) NULL) {	/* most right */
+	    resid_prev_ptr = pid_residww->resid_next_pid_ptr;
+	    pid_residww->resid_prev_resid_ptr->resid_next_resid_ptr =
+		pid_residww->resid_next_pid_ptr;
+	    pid_residww->resid_next_pid_ptr->resid_prev_pid_ptr =
+		(struct pid_resid *) NULL;
+	    pid_residww->resid_next_pid_ptr->resid_prev_resid_ptr =
+		pid_residww->resid_prev_resid_ptr;
+	} else {		/* between left and right */
+	    pid_residww->resid_prev_resid_ptr->resid_next_resid_ptr =
+		pid_residww->resid_next_pid_ptr;
+	    pid_residww->resid_next_resid_ptr->resid_prev_resid_ptr =
+		pid_residww->resid_next_pid_ptr;
+	    pid_residww->resid_next_pid_ptr->resid_prev_pid_ptr =
+		(struct pid_resid *) NULL;
+	    pid_residww->resid_next_pid_ptr->resid_next_resid_ptr =
+		pid_residww->resid_next_resid_ptr;
+	    pid_residww->resid_next_pid_ptr->resid_prev_resid_ptr =
+		pid_residww->resid_prev_resid_ptr;
+	}
+    } else if (pid_residww->resid_next_pid_ptr == (struct pid_resid *) NULL) {	/* bottom pid */
+	if (pid_residww->resid_prev_resid_ptr == (struct pid_resid *) NULL && pid_residww->resid_next_resid_ptr == (struct pid_resid *) NULL) {	/* no left and right */
+	    pid_residww->resid_prev_pid_ptr->resid_next_pid_ptr =
+		(struct pid_resid *) NULL;
+	} else if (pid_residww->resid_prev_resid_ptr == (struct pid_resid *) NULL) {	/* most left */
+	    pid_residww->resid_prev_pid_ptr->resid_next_pid_ptr =
+		(struct pid_resid *) NULL;
+	} else if (pid_residww->resid_next_resid_ptr == (struct pid_resid *) NULL) {	/* most right */
+	    pid_residww->resid_prev_pid_ptr->resid_next_pid_ptr =
+		(struct pid_resid *) NULL;
+	} else {		/* between left and right */
+	    pid_residww->resid_prev_pid_ptr->resid_next_pid_ptr =
+		(struct pid_resid *) NULL;
+	}
+    } else {			/* pid between top and bottom */
+	if (pid_residww->resid_prev_resid_ptr == (struct pid_resid *) NULL && pid_residww->resid_next_resid_ptr == (struct pid_resid *) NULL) {	/* no left and right */
+	    pid_residww->resid_next_pid_ptr->resid_prev_pid_ptr =
+		pid_residww->resid_prev_pid_ptr;
+	    pid_residww->resid_prev_pid_ptr->resid_next_pid_ptr =
+		pid_residww->resid_next_pid_ptr;
+	} else if (pid_residww->resid_prev_resid_ptr == (struct pid_resid *) NULL) {	/* most left */
+	    pid_residww->resid_next_pid_ptr->resid_prev_pid_ptr =
+		pid_residww->resid_prev_pid_ptr;
+	    pid_residww->resid_prev_pid_ptr->resid_next_pid_ptr =
+		pid_residww->resid_next_pid_ptr;
+	} else if (pid_residww->resid_next_resid_ptr == (struct pid_resid *) NULL) {	/* most right */
+	    pid_residww->resid_next_pid_ptr->resid_prev_pid_ptr =
+		pid_residww->resid_prev_pid_ptr;
+	    pid_residww->resid_prev_pid_ptr->resid_next_pid_ptr =
+		pid_residww->resid_next_pid_ptr;
+	} else {		/* between left and right */
+	    pid_residww->resid_next_pid_ptr->resid_prev_pid_ptr =
+		pid_residww->resid_prev_pid_ptr;
+	    pid_residww->resid_prev_pid_ptr->resid_next_pid_ptr =
+		pid_residww->resid_next_pid_ptr;
+	}
     }
 
     free(pid_residww->pid);
@@ -1327,18 +1339,18 @@ char *keystr;                   /* key string, max MAX_IDLEN bytes */
  * return : OK, DEADLOCK, WAIT
  */
 static int ExclCheck(pid, resid, mode)
-char *pid;                      /* process id, max MAX_IDLEN bytes */
-char *resid;                    /* resource id, max MAX_IDLEN bytes */
-int mode;                       /* SHARE_LOCK, EXCLUSIVE_LOCK */
+char *pid;			/* process id, max MAX_IDLEN bytes */
+char *resid;			/* resource id, max MAX_IDLEN bytes */
+int mode;			/* SHARE_LOCK, EXCLUSIVE_LOCK */
 {
     if (IsUnused(pid, resid, mode)) {
-        return OK;
+	return OK;
     }
 
     if (Deadlocl(pid, pid, resid, mode)) {
-        return DEADLOCK;
+	return DEADLOCK;
     } else {
-        return WAIT;
+	return WAIT;
     }
 }
 
@@ -1347,37 +1359,37 @@ int mode;                       /* SHARE_LOCK, EXCLUSIVE_LOCK */
  * return : FALSE, TRUE
  */
 static int IsUnused(pid, resid, mode)
-char *pid;                      /* process id, max MAX_IDLEN bytes */
-char *resid;                    /* resource id, max MAX_IDLEN bytes */
-int mode;                       /* SHARE_LOCK, EXCLUSIVE_LOCK */
+char *pid;			/* process id, max MAX_IDLEN bytes */
+char *resid;			/* resource id, max MAX_IDLEN bytes */
+int mode;			/* SHARE_LOCK, EXCLUSIVE_LOCK */
 {
     struct pid_resid *pid_residw;
     struct pid_resid *pid_residww;
 
     pid_residw = resid_next_ptr;
     while (pid_residw != (struct pid_resid *) NULL
-           && strncmp(pid_residw->resid, resid, MAX_IDLEN) != 0) {
-        pid_residw = pid_residw->resid_next_resid_ptr;
+	   && strncmp(pid_residw->resid, resid, MAX_IDLEN) != 0) {
+	pid_residw = pid_residw->resid_next_resid_ptr;
     }
 
     pid_residww = pid_residw;
     while (pid_residww != (struct pid_resid *) NULL
-           && strncmp(pid_residww->pid, pid, MAX_IDLEN) != 0) {
-        if (mode == SHARE_LOCK) {
-            if (pid_residww->status == EXCLUSIVE_LOCK
-                || pid_residww->status == EXCLUSIVE_WAIT
-                || pid_residww->status == SHARE_WAIT) {
-                return FALSE;
-            }
-        } else {
-            if (pid_residww->status == EXCLUSIVE_LOCK
-                || pid_residww->status == EXCLUSIVE_WAIT
-                || pid_residww->status == SHARE_LOCK
-                || pid_residww->status == SHARE_WAIT) {
-                return FALSE;
-            }
-        }
-        pid_residww = pid_residww->resid_next_pid_ptr;
+	   && strncmp(pid_residww->pid, pid, MAX_IDLEN) != 0) {
+	if (mode == SHARE_LOCK) {
+	    if (pid_residww->status == EXCLUSIVE_LOCK
+		|| pid_residww->status == EXCLUSIVE_WAIT
+		|| pid_residww->status == SHARE_WAIT) {
+		return FALSE;
+	    }
+	} else {
+	    if (pid_residww->status == EXCLUSIVE_LOCK
+		|| pid_residww->status == EXCLUSIVE_WAIT
+		|| pid_residww->status == SHARE_LOCK
+		|| pid_residww->status == SHARE_WAIT) {
+		return FALSE;
+	    }
+	}
+	pid_residww = pid_residww->resid_next_pid_ptr;
     }
     return TRUE;
 }
@@ -1387,10 +1399,10 @@ int mode;                       /* SHARE_LOCK, EXCLUSIVE_LOCK */
  * return : FALSE, TRUE
  */
 static int Deadlocl(pid1, pid, resid, mode)
-char *pid1;                     /* first process id, max MAX_IDLEN bytes */
-char *pid;                      /* process id, max MAX_IDLEN bytes */
-char *resid;                    /* resource id, max MAX_IDLEN bytes */
-int mode;                       /* SHARE_LOCK, EXCLUSIVE_LOCK */
+char *pid1;			/* first process id, max MAX_IDLEN bytes */
+char *pid;			/* process id, max MAX_IDLEN bytes */
+char *resid;			/* resource id, max MAX_IDLEN bytes */
+int mode;			/* SHARE_LOCK, EXCLUSIVE_LOCK */
 {
     struct pid_resid *pid_residw;
     struct pid_resid *pid_residww;
@@ -1398,42 +1410,42 @@ int mode;                       /* SHARE_LOCK, EXCLUSIVE_LOCK */
 
     pid_residw = resid_next_ptr;
     while (pid_residw != (struct pid_resid *) NULL
-           && strncmp(resid, pid_residw->resid, MAX_IDLEN) != 0) {
-        pid_residw = pid_residw->resid_next_resid_ptr;
+	   && strncmp(resid, pid_residw->resid, MAX_IDLEN) != 0) {
+	pid_residw = pid_residw->resid_next_resid_ptr;
     }
 
     pid_residww = pid_residw;
-    while (pid_residww != (struct pid_resid *) NULL && strncmp(pid_residww->pid, pid, MAX_IDLEN) != 0) {        /* when PID is going to lock RESID with MODE, who let PID wait ? */
+    while (pid_residww != (struct pid_resid *) NULL && strncmp(pid_residww->pid, pid, MAX_IDLEN) != 0) {	/* when PID is going to lock RESID with MODE, who let PID wait ? */
 
-        if (((pid_residww->status == EXCLUSIVE_LOCK
-              || pid_residww->status == EXCLUSIVE_WAIT
-              || pid_residww->status == SHARE_WAIT) && mode == SHARE_LOCK)
-            || ((pid_residww->status == EXCLUSIVE_LOCK || pid_residww->status == EXCLUSIVE_WAIT || pid_residww->status == SHARE_LOCK || pid_residww->status == SHARE_WAIT) && mode == EXCLUSIVE_LOCK)) {        /* found pid who locked resid already */
-            if (strncmp(pid1, pid_residww->pid, MAX_IDLEN) == 0) {      /* pid who locked resid already == first pid then deadlock */
-                return TRUE;
-            }
+	if (((pid_residww->status == EXCLUSIVE_LOCK
+	      || pid_residww->status == EXCLUSIVE_WAIT
+	      || pid_residww->status == SHARE_WAIT) && mode == SHARE_LOCK)
+	    || ((pid_residww->status == EXCLUSIVE_LOCK || pid_residww->status == EXCLUSIVE_WAIT || pid_residww->status == SHARE_LOCK || pid_residww->status == SHARE_WAIT) && mode == EXCLUSIVE_LOCK)) {	/* found pid who locked resid already */
+	    if (strncmp(pid1, pid_residww->pid, MAX_IDLEN) == 0) {	/* pid who locked resid already == first pid then deadlock */
+		return TRUE;
+	    }
 
-            pid_residwww = pid_residww;
-            while (pid_residwww->pid_prev_resid_ptr != (struct pid_resid *) NULL) {     /* return to top resource in pid */
-                pid_residwww = pid_residwww->pid_prev_resid_ptr;
-            }
-            while (pid_residwww != (struct pid_resid *) NULL && pid_residwww->status != SHARE_WAIT && pid_residwww->status != EXCLUSIVE_WAIT) { /* find resource which pid wait */
-                pid_residwww = pid_residwww->pid_next_resid_ptr;
-            }
-            if (pid_residwww != (struct pid_resid *) NULL) {    /* what's resource which is waited by pid who let wait previous pid ? */
+	    pid_residwww = pid_residww;
+	    while (pid_residwww->pid_prev_resid_ptr != (struct pid_resid *) NULL) {	/* return to top resource in pid */
+		pid_residwww = pid_residwww->pid_prev_resid_ptr;
+	    }
+	    while (pid_residwww != (struct pid_resid *) NULL && pid_residwww->status != SHARE_WAIT && pid_residwww->status != EXCLUSIVE_WAIT) {	/* find resource which pid wait */
+		pid_residwww = pid_residwww->pid_next_resid_ptr;
+	    }
+	    if (pid_residwww != (struct pid_resid *) NULL) {	/* what's resource which is waited by pid who let wait previous pid ? */
 
-                if (pid_residwww->status == SHARE_WAIT) {
-                    if (Deadlocl(pid1, pid_residwww->pid, pid_residwww->resid, SHARE_LOCK)) {   /* recursive call deadlock */
-                        return TRUE;
-                    }
-                } else {
-                    if (Deadlocl(pid1, pid_residwww->pid, pid_residwww->resid, EXCLUSIVE_LOCK)) {       /* recursive call deadlock */
-                        return TRUE;
-                    }
-                }
-            }
-        }
-        pid_residww = pid_residww->resid_next_pid_ptr;
+		if (pid_residwww->status == SHARE_WAIT) {
+		    if (Deadlocl(pid1, pid_residwww->pid, pid_residwww->resid, SHARE_LOCK)) {	/* recursive call deadlock */
+			return TRUE;
+		    }
+		} else {
+		    if (Deadlocl(pid1, pid_residwww->pid, pid_residwww->resid, EXCLUSIVE_LOCK)) {	/* recursive call deadlock */
+			return TRUE;
+		    }
+		}
+	    }
+	}
+	pid_residww = pid_residww->resid_next_pid_ptr;
     }
 
     return FALSE;

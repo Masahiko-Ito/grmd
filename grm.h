@@ -28,6 +28,7 @@
  *  2004.06.18 first release
  *  2007.01.29 add grm_getpr_xxx()
  *  2007.01.30 add grm_getrp_xxx()
+ *  2007.02.14 change MAX_IDLEN 64 to 256
  *
  */
 
@@ -51,7 +52,7 @@
 /*
  * max length of pid, resid, keystring
  */
-#define MAX_IDLEN	(64)
+#define MAX_IDLEN	(256)
 /*
  * user functions
  */
@@ -69,4 +70,3 @@ extern int grm_getpr_item();
 extern int grm_getrp_first();
 extern int grm_getrp_next();
 extern int grm_getrp_item();
-
