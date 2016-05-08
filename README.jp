@@ -1,0 +1,301 @@
+grmd-0.1 -- General Resource Management Daemon
+Copyright (C) 2004  Masahiko Ito
+
+These programs is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+These programs is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with these programs; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+Mail suggestions and bug reports for these programs to
+m-ito@mbox.kyoto-inet.or.jp
+
+紹介
+====
+
+grmdは各種リソースの排他制御機能を提供する汎用的なデーモンです。主な
+開発プラットホームはSlackware-7.0(linux-2.2.26)上ですが、ほとんどの
+Unix系OSの上で利用可能かと思います。
+
+従来、ファイルの排他制御であれば、mkdir(),symlink()等を利用してビジー
+ウェイトさせる手法であったり、flock(),lockf(),fcntl()等を駆使して排他
+制御を行ったりしていました。またファイル以外のリソースを排他制御する場
+合は、セマフォ等を使って制御していたと思います。これらの排他制御の質は
+個々のプログラマの力量に左右されたり、プログラム個々にコーディングされ
+ることにより、システム全体として統一した制御はなかなか難しく、仮に優秀
+なプログラマが綿密に設計したとしても、デッドロック等の不可避な問題が常
+に付きまとっていました。
+
+grmdはクライアントサーバ方式で制御を行い、あらゆるリソースの排他制御を
+共通のインタフェースで行うことができます。特徴としては、
+
+1. 排他レベルは2段階(共有ロック、排他ロック)利用することができ、プロセ
+スの並列度をできるだけ損なわずに排他制御を行えます。
+
+2. リソースの解放待ち状態が発生した場合はビジーウェイト等に頼ること無
+く、リソースが解放されるまで自動的に待ち合わせます。
+
+3. デッドロック状態をタイムアウト等に頼ること無く瞬時に判断し、クライ
+アントに通知します。
+
+等を揚げることができます。
+
+インストール
+============
+
+$ tar xvzf grmd-0.1.tar.gz
+$ cd grmd-0.1
+$ vi Makefile
+$ make
+$ su
+# make install
+# vi /usr/local/grmd/keystring  # 管理者用キー文字列設定(最大64文字)
+# vi /etc/hosts.allow
+# vi /etc/hosts.deny
+
+(*) BSD系OSの場合、カーネルのSYSVMSGオプションが有効になっていることを
+確認して下さい。
+
+実行
+====
+
+# /usr/local/grmd/rc.grmd
+
+起動スクリプト
+==============
+
+$ /usr/local/grmd/rc.grmd -h
+usage : rc.grmd [-d|--dir home_directory] [-H|--host hostname] [-p|--port port] 
+                [-q|--queue queue_count] [-k|--key keystring_file] [-l|--log logfile]
+
+  -d|--dir home_directory ... home directory. [/usr/local/grmd]
+  -H|--host hostname      ... hostname which daemon run in. [localhost]
+  -p|--port port          ... socket port which client talk to. [20100]
+  -q|--queue queue_count  ... queue count of socket backlog. [128]
+  -k|--key keystring_file ... file (in home_directory) which administrator keystring is written in. [keystring]
+  -l|--log logfile        ... file (in home_directory) which daemon record messages to. [logfile]
+
+排他制御
+========
+
+排他制御モードは「SHARE_LOCK」「EXCLUSIVE_LOCK」の2種類をサポートする。
+先行排他(1)に対して後行排他(2)が実行された場合の動作を以下の表1に示す。
+
+                          (表1)
+
+                     |SHARE_LOCK(1)|EXCLUSIVE_LOCK(1)|
+    -----------------+-------------+-----------------+
+    SHARE_LOCK(2)    |  排他獲得   |    解放待ち     |
+    -----------------+-------------+-----------------+
+    EXCLUSIVE_LOCK(2)|  解放待ち   |    解放待ち     |
+    -----------------+-------------+-----------------+
+
+デッドロックの検出
+==================
+
+grmdは排他の要求時に、資源割り当てグラフにおける循環状態が発生した場合、
+デッドロックと認識する(図1 - 図4)。一般的にデッドロックを検知したプロ
+セスは自己の排他獲得している全ての資源を一旦解放した後に、必要であれば
+ロールバック等の処置を行い、再度資源を獲得し直す必要がある。
+
+------------------------------------------------------------
+
+      GET LOCK
+     +---------------->(Process 1)
+     |
+     |
+     |
+[Resource 1]                                  [Resource 2]
+
+
+
+                       (Process 2)
+
+                          (図1)
+
+------------------------------------------------------------
+
+      GET LOCK
+     +---------------->(Process 1)
+     |
+     |
+     |
+[Resource 1]                                  [Resource 2]
+                                                   |
+                                                   |
+                                                   |
+                       (Process 2)<----------------+
+                                           GET LOCK
+                          (図2)
+
+------------------------------------------------------------
+
+
+      GET LOCK                            WAIT LOCK      
+     +---------------->(Process 1).................+
+     |                                             :
+     |                                             :
+     |                                             v
+[Resource 1]                                  [Resource 2]
+                                                   |
+                                                   |
+                                                   |
+                       (Process 2)<----------------+
+                                           GET LOCK
+                          (図3)
+
+------------------------------------------------------------
+
+
+      GET LOCK                            WAIT LOCK
+     +---------------->(Process 1).................+
+     |                                             :
+     |                                             :
+     |                                             v
+[Resource 1]                                  [Resource 2]
+     X                                             |
+     :                                             |
+     :                                             |
+     +.................(Process 2)<----------------+
+      DEADLOCK!!                           GET LOCK
+
+                          (図4)
+
+------------------------------------------------------------
+
+インターフェース
+================
+
+grmdとの通信は一般的なソケット通信で行う。grmdの待ち受けるソケットポー
+ト(デフォルト 20100)にコマンド文字列を書き込み、同じポートから結果を受
+け取る。grmdの制御に利用するプロトコルコマンドは、以下のものである。コ
+マンド中のトークンの区切り文字はTAB(0x09)である。コマンドは改行文字
+('\n') により終端する。
+
+------------------------------------------------------------
+
+lock pid resid lockmode keystring
+
+  機能 : 排他を獲得する。対象のリソースが既に他のプロセスで排他獲得
+         されていた場合は、解放されるまで待機する。
+  pid       : 自己のプロセスを特定する文字列(最大64文字)。
+  resid     : 排他の対象リソースを特定する文字列(最大64文字)。
+  lockmode  : 排他制御モードを指定する文字列。
+              share_lock, sl, s
+              exclusive_lock, el, x
+  keystring : 対象リソースをunlockする際に指定するキー文字列(最大64文字)。
+
+戻値 : OK       : 排他獲得成功
+       DEADLOCK : 排他獲得失敗(デッドロック検知)
+       NG       : 排他獲得失敗
+
+------------------------------------------------------------
+
+unlock pid resid keystring
+
+  機能 : 排他を解放する。開放を待っていたプロセスを起こす。
+  pid       : 自己のプロセスを特定する文字列(最大64文字)。
+  resid     : 排他の対象リソースを特定する文字列(最大64文字)。
+  keystring : 対象リソースをlockする際に指定したキー文字列(最大64文字)。
+
+戻値 : OK       : 排他解放成功
+       NG       : 排他解放失敗
+
+------------------------------------------------------------
+
+spr keystring
+
+  機能 : リソースの状態をログファイルに書き出す(pid-resid)。
+  keystring : デーモン起動時に指定した管理者用キー文字列(最大64文字)。
+
+戻値 : OK       : 成功
+       NG       : 失敗
+
+------------------------------------------------------------
+
+srp keystring
+
+  機能 : リソースの状態をログファイルに書き出す(resid-pid)。
+  keystring : デーモン起動時に指定した管理者用キー文字列(最大64文字)。
+
+戻値 : OK       : 成功
+       NG       : 失敗
+
+perlインタフェース
+==================
+
+perlインタフェース(grm.pl)を提供する。利用方法はsample*.plを
+参照してください。
+
+------------------------------------------------------------
+
+機能:排他開始
+引数:host, port, pid, resid, lockmode, keystring
+戻値:status
+例  :$status = grm_lock("localhost", "20100", "process1", "resource1", "SHARE_LOCK", "Gehime");
+
+lockmode : SHARE_LOCK, SL, S
+           EXCLUSIVE_LOCK, EL, X
+
+------------------------------------------------------------
+
+機能:排他終了
+引数:host, port, pid, resid, keystring
+戻値:status
+例  :$status = grm_unlock("localhost", "20100", "process1", "resource1", "Gehime");
+
+------------------------------------------------------------
+
+機能:リソース状態表示(pid-resid)
+引数:host, port, keystring
+戻値:status
+例  :$status = grm_spr("localhost", "20100", "Gehime");
+
+------------------------------------------------------------
+
+機能:リソース状態表示(resid-pid)
+引数:host, port, keystring
+戻値:status
+例  :$status = grm_srp("localhost", "20100", "Gehime");
+
+サンプル(perlスクリプト)の実行
+==============================
+
+# sample1.plはプロセス`p1'として、リソース`r1.txt'、`r2.txt'の
+# 順に確保し、データに1加算を100回行う。
+#
+# sample2.plはプロセス`p2'として、リソース`r2.txt'、`r1.txt'の
+# 順に確保し、データに1加算を100回行う。
+#
+# sample3.plはプロセス`p2'として、リソース`r1.txt'、`r2.txt'の
+# 順に確保し、データに1加算を100回行う。
+
+#
+# デッドロックを起こすパターン
+# 
+$ ./sample1 localhost 20100 & ./sample2 localhost 20100
+
+#
+# デッドロックを起こさないパターン
+# 
+$ ./sample1 localhost 20100 & ./sample3 localhost 20100
+
+BUGS
+====
+
+排他を獲得したプロセスが排他を解放せずに終了した場合も、排他の解放は自
+動的には行われない。排他を利用するプログラムはシグナル等を利用して、で
+きうる限り終了時には排他の解放を行うように努めることが望ましい。
+
+-- 
+Masahiko Ito <m-ito@mbox.kyoto-inet.or.jp>
+http://myh.no-ip.org/~tyserv/grmd/
+

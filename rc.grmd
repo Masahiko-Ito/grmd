@@ -1,0 +1,66 @@
+#!/bin/sh
+#
+# grmd          General Resouce Manager Daemon
+#
+# Author:       Masahiko Ito <m-ito@mbox.kyoto-inet.or.jp>
+# Modyfy:
+# description: grmd manage resources generally.
+# processname: grmd
+
+if [ X"$1" = "X-h" -o X"$1" = "X--help" ]
+then
+    echo "usage : `basename $0` [-d|--dir home_directory] [-H|--host hostname] [-p|--port port] [-q|--queue queue_count] [-k|--key keystring_file] [-l|--log logfile]"
+    echo ""
+    echo "  -d|--dir home_directory ... home directory. [/usr/local/grmd]"
+    echo "  -H|--host hostname      ... hostname which daemon run in. [localhost]"
+    echo "  -p|--port port          ... socket port which client talk to. [20100]"
+    echo "  -q|--queue queue_count  ... queue count of socket backlog. [128]"
+    echo "  -k|--key keystring_file ... file (in home_directory) which administrator keystring is written in. [keystring]"
+    echo "  -l|--log logfile        ... file (in home_directory) which daemon record messages to. [logfile]"
+    exit 0
+fi
+
+homedir="/usr/local/grmd"
+hostname="localhost"
+port="20100"
+queue="128"
+keystring="keystring"
+logfile="logfile"
+
+while [ "$#" != "0" ]
+do
+    case $1 in
+    -d|--dir )
+        shift
+        homedir="$1"
+        ;;
+    -H|--host )
+        shift
+        hostname="$1"
+        ;;
+    -p|--port )
+        shift
+        port="$1"
+        ;;
+    -q|--queue )
+        shift
+        queue="$1"
+        ;;
+    -k|--key )
+        shift
+        keystring="$1"
+        ;;
+    -l|--log )
+        shift
+        logfile="$1"
+        ;;
+    *)
+        ;;
+    esac
+    shift
+done
+
+umask 077
+rm -f ${homedir}/${logfile}
+grmd ${hostname} ${port} ${queue} ${homedir}/${keystring} >${homedir}/${logfile} 2>&1 &
+
